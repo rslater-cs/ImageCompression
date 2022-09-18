@@ -13,9 +13,7 @@ class ConvCompression(Module):
         self.compression_head = Sequential(
             Conv2d(in_channels=128, out_channels=64, kernel_size=3, stride=1, padding=1),
             ReLU(),
-            BatchNorm2d(64),
             Conv2d(in_channels=64, out_channels=32, kernel_size=3, stride=1, padding=1),
-            Dropout(0.5),
             ReLU(),
             Conv2d(in_channels=32, out_channels=16, kernel_size=3, stride=1, padding=1),
             ReLU(),
@@ -29,10 +27,8 @@ class ConvCompression(Module):
         return Sequential(
             Conv2d(in_channels=in_channels, out_channels=out_channels, kernel_size=3, stride=1, padding=1),
             ReLU(),
-            BatchNorm2d(out_channels),
             Conv2d(in_channels=out_channels, out_channels=out_channels, kernel_size=3, stride=1, padding=1),
             ReLU(),
-            Dropout(0.5),
             Conv2d(in_channels=out_channels, out_channels=out_channels, kernel_size=2, stride=2),
             # MaxPool2d(kernel_size=2, stride=2),
             ReLU()
@@ -42,10 +38,8 @@ class ConvCompression(Module):
         return Sequential(
             ConvTranspose2d(in_channels=in_channels, out_channels=out_channels, kernel_size=3, stride=1, padding=1),
             ReLU(),
-            BatchNorm2d(out_channels),
             ConvTranspose2d(in_channels=out_channels, out_channels=out_channels, kernel_size=3, stride=1, padding=1),
             ReLU(),
-            Dropout(0.5),
             ConvTranspose2d(in_channels=out_channels, out_channels=out_channels, kernel_size=2, stride=2),
             ReLU()
         )
@@ -55,7 +49,6 @@ class ConvCompression(Module):
         x = self.reduction_layer2(x)
         x = self.reduction_layer3(x)
         x = self.compression_head(x)
-        print(x.shape)
 
         x = self.gen_layer1(x)
         x = self.gen_layer2(x)

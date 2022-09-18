@@ -19,7 +19,7 @@ REDUCTION_FACTOR = 2**3
 
 ASPECT_RATIO = np.asarray([16, 9])
 BASE_SIZE = ASPECT_RATIO*REDUCTION_FACTOR
-PATCH_SIZE = BASE_SIZE*2
+PATCH_SIZE = BASE_SIZE*1
 
 WIDTH = 0
 HEIGHT = 1
@@ -95,4 +95,4 @@ def video_to_patches(video_path: Path) -> None:
         progress = to_patches(path, tensor_image=tensor_frame, progress=progress)
 
 if __name__ == '__main__':
-    video_to_patches(Path("./data/movies/nuclearFamily.mp4"))
+    video_to_patches(Path("./data/movies/shooters.mp4"))
