@@ -7,6 +7,7 @@ from PIL import Image
 from typing import List
 import os
 import os.path
+from time import time
 
 PatchSequence = List[Image.Image]
 
@@ -18,7 +19,7 @@ REDUCTION_FACTOR = 2**3
 
 ASPECT_RATIO = np.asarray([16, 9])
 BASE_SIZE = ASPECT_RATIO*REDUCTION_FACTOR
-PATCH_SIZE = BASE_SIZE*1
+PATCH_SIZE = BASE_SIZE*2
 
 WIDTH = 0
 HEIGHT = 1
@@ -35,7 +36,7 @@ def to_patches(path: Path, tensor_image: torch.Tensor, progress: int) -> torch.T
     for i in range(patch_x):
             for j in range(patch_y):
                 save_patch(path, tensor_image[:, j*PATCH_SIZE[HEIGHT]:j*PATCH_SIZE[HEIGHT]+PATCH_SIZE[HEIGHT], i*PATCH_SIZE[WIDTH]:i*PATCH_SIZE[WIDTH]+PATCH_SIZE[WIDTH]], progress)
-                progress += 0
+                progress += 1
 
     return progress
 
@@ -61,10 +62,14 @@ def make_directory(video_path: Path) -> Path:
     return full_dir
     
 
-def save_patch(target_path: Path, patch: torch.Tensor, progress) -> int:
-    name = "{}.pt".format(progress)
+def save_patch(target_path: Path, patch: torch.Tensor, progress):
+    TensorToPIL = transforms.ToPILImage()
+    name = "{}.jpg".format(progress)
     id_path = target_path / name
-    torch.save(patch, id_path)
+
+    Image.Image.save(TensorToPIL(patch), id_path)
+
+    return
 
 
 def video_to_patches(video_path: Path) -> None:
@@ -73,9 +78,16 @@ def video_to_patches(video_path: Path) -> None:
     i = 0
 
     path = make_directory(video_path)
+    print("Building in path:", path)
+    
+    cur_time = time()
 
     for frame in imageio.imiter(video_path):
-        print("Frame:", i)
+        if(i % 100 == 0):
+            print("FPS:", 100/(time()-cur_time))
+            cur_time = time()
+            print("Frame:", i)
+
         i += 1
         
         tensor_frame = NumpyToTensor(frame)
