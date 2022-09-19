@@ -14,6 +14,7 @@ EPOCHS = 10
 LAYERS = 3
 REDUCTION_FACTOR = 2**3
 
+FRAME_SIZE = np.asarray([1280, 720])
 ASPECT_RATIO = np.asarray([16, 9])
 BASE_SIZE = ASPECT_RATIO*REDUCTION_FACTOR
 PATCH_SIZE = BASE_SIZE*1
@@ -29,7 +30,7 @@ model.train()
 criterion = nn.CrossEntropyLoss()
 optimizer = optim.Adam(model.parameters())
 
-patch_dataset = PatchSet(PATCH_SIZE)
+patch_dataset = PatchSet(FRAME_SIZE, PATCH_SIZE)
 patch_loader = DataLoader(patch_dataset, batch_size=512)
 
 for epoch in range(EPOCHS):
@@ -40,19 +41,19 @@ for epoch in range(EPOCHS):
 
             inputs = data.to(device)
 
-            print("Data Speed", time()-data_speed)
+            # print("Data Speed", time()-data_speed)
 
             optimizer.zero_grad()
 
             model_speed = time()
             outputs = model(inputs)
-            print("Model speed", time()-model_speed)
+            # print("Model speed", time()-model_speed)
             loss = criterion(outputs, inputs)
 
             prop_speed = time()
             loss.backward()
             optimizer.step()
-            print("Prop Speed", time()-prop_speed)
+            # print("Prop Speed", time()-prop_speed)
 
             tepoch.set_postfix(loss=loss.item())
 

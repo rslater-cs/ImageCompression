@@ -1,3 +1,4 @@
+from unittest.mock import patch
 from torch.utils.data import Dataset
 from PIL import Image
 from torchvision import transforms
@@ -8,44 +9,71 @@ import os.path
 import time
 import sys
 import random
+import imageio
+import cv2
 
-PATH_ROOT = Path(os.path.curdir) / "data" / "patches"
-PATCH_CACHE_SIZE = 100000
+PATH_ROOT = Path(os.path.curdir) / "data" / "movies"
+FRAME_CACHE_SIZE = 350
 
 class PatchSet(Dataset):
-    def __init__(self, patch_size):
-        self.PILtoTensor = transforms.ToTensor()
-        self.path = PATH_ROOT / "{}_{}".format(patch_size[0], patch_size[1])
+    def __init__(self, frame_size, patch_size, movie_path):
+        self.toTensor = transforms.ToTensor()
+        self.path = PATH_ROOT
+        self.frame_size = frame_size
         self.patch_size = patch_size
+        self.patches_per_frame = (frame_size[0] // patch_size[0])**2
+        self.patch_cache_size = FRAME_CACHE_SIZE*self.patches_per_frame
+        self.patch_x = frame_size[0] // patch_size[0]
+        self.patch_y = frame_size[1] // patch_size[1]
         self.progress = 0
+        self.cache_refreshes = 0
 
-        self.content = []
+        self.length = 0
 
         print("Loading Started")
 
-        for root, dir, files in os.walk(self.path):
-            if(len(dir) == 0):
-                for file in files:
-                    self.content.append(Path(root) / Path(file))
+        clip_path = Path(PATH_ROOT) / Path(movie_path)
+        self.movie_names.append(clip_path)
 
-        random.shuffle(self.content)
+        reader = imageio.get_reader(clip_path)
+        self.content.append(reader)
 
-        self.cache = torch.zeros((PATCH_CACHE_SIZE, 3, self.patch_size[1], self.patch_size[0]))
-        self.load_patches(self.progress)
+        cap = cv2.VideoCapture(str(clip_path))
+                    
+        self.length += int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        self.lengths.append(int(cap.get(cv2.CAP_PROP_FRAME_COUNT)))
+
+        self.length = int(self.length)
+
+        self.cache = torch.zeros((self.patch_cache_size, 3, self.patch_size[1], self.patch_size[0]))
+        self.load_patches()
+
+        print("Total Samples", (self.patch_x**2)*self.length)
 
         print("Loading Complete")
 
-    def load_patches(self, start):
-        size = min(len(self.content)-start, PATCH_CACHE_SIZE)
-        for i in range(size):
-            self.cache[i] = self.PILtoTensor(Image.open(self.content[start+i]))
+    def load_patches(self):
+        size = min(self.length-self.progress, FRAME_CACHE_SIZE)
+        i = self.progress
+        j = 0
+        
+        while(i-(FRAME_CACHE_SIZE*self.cache_refreshes) < size and i-(FRAME_CACHE_SIZE*self.cache_refreshes) < self.lengths[self.current_movie]):
+            frame = self.toTensor(self.content[self.current_movie].get_data(i))
+
+            for l in range(self.patch_x):
+                for k in range(self.patch_y):
+                    # print("j", j, "l", l, "k", k, "i", i)
+                    self.cache[j] = frame[:, k*self.patch_size[1]:k*self.patch_size[1]+self.patch_size[1], l*self.patch_size[0]:l*self.patch_size[0]+self.patch_size[0]]
+                    j += 1
+
+            i += 1
 
     def __len__(self):
-        return len(self.content)
+        return (self.patch_x**2)*self.length
 
     def __getitem__(self, index):
-        if(index > self.progress+PATCH_CACHE_SIZE):
-            self.progress += PATCH_CACHE_SIZE
-            self.load_patches(self.progress)
+        if(index-(self.cache_refreshes*self.patch_cache_size) > self.patch_cache_size):
+            self.cache_refreshes += 1
+            self.load_patches()
 
-        return self.cache[index % PATCH_CACHE_SIZE]
+        return self.cache[index % self.patch_cache_size]
