@@ -9,7 +9,7 @@ from tqdm import tqdm
 import numpy as np
 from time import time
 
-EPOCHS = 10
+EPOCHS = 2
 
 LAYERS = 3
 REDUCTION_FACTOR = 2**3
@@ -30,7 +30,7 @@ model.train()
 criterion = nn.CrossEntropyLoss()
 optimizer = optim.Adam(model.parameters())
 
-patch_dataset = PatchSet(FRAME_SIZE, PATCH_SIZE)
+patch_dataset = PatchSet(FRAME_SIZE, PATCH_SIZE, "movies\\nuclearFamily.mp4")
 patch_loader = DataLoader(patch_dataset, batch_size=512)
 
 for epoch in range(EPOCHS):

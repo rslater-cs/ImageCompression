@@ -12,8 +12,8 @@ import random
 import imageio
 import cv2
 
-PATH_ROOT = Path(os.path.curdir) / "data" / "movies"
-FRAME_CACHE_SIZE = 350
+PATH_ROOT = Path(os.path.curdir) / "data"
+FRAME_CACHE_SIZE = 10
 
 class PatchSet(Dataset):
     def __init__(self, frame_size, patch_size, movie_path):
@@ -28,20 +28,15 @@ class PatchSet(Dataset):
         self.progress = 0
         self.cache_refreshes = 0
 
-        self.length = 0
-
         print("Loading Started")
 
         clip_path = Path(PATH_ROOT) / Path(movie_path)
-        self.movie_names.append(clip_path)
 
-        reader = imageio.get_reader(clip_path)
-        self.content.append(reader)
+        self.movie = imageio.get_reader(clip_path)
 
         cap = cv2.VideoCapture(str(clip_path))
                     
-        self.length += int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-        self.lengths.append(int(cap.get(cv2.CAP_PROP_FRAME_COUNT)))
+        self.length = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
 
         self.length = int(self.length)
 
@@ -57,8 +52,8 @@ class PatchSet(Dataset):
         i = self.progress
         j = 0
         
-        while(i-(FRAME_CACHE_SIZE*self.cache_refreshes) < size and i-(FRAME_CACHE_SIZE*self.cache_refreshes) < self.lengths[self.current_movie]):
-            frame = self.toTensor(self.content[self.current_movie].get_data(i))
+        while(i-(FRAME_CACHE_SIZE*self.cache_refreshes) < size):
+            frame = self.toTensor(self.movie.get_data(i))
 
             for l in range(self.patch_x):
                 for k in range(self.patch_y):
@@ -67,6 +62,8 @@ class PatchSet(Dataset):
                     j += 1
 
             i += 1
+
+        self.progress = i
 
     def __len__(self):
         return (self.patch_x**2)*self.length
