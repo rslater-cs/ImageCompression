@@ -21,10 +21,10 @@ class PatchSet(Dataset):
         self.path = PATH_ROOT
         self.frame_size = frame_size
         self.patch_size = patch_size
-        self.patches_per_frame = (frame_size[0] // patch_size[0])**2
-        self.patch_cache_size = FRAME_CACHE_SIZE*self.patches_per_frame
         self.patch_x = frame_size[0] // patch_size[0]
         self.patch_y = frame_size[1] // patch_size[1]
+        self.patches_per_frame = self.patch_x*self.patch_y
+        self.patch_cache_size = FRAME_CACHE_SIZE*self.patches_per_frame
         self.progress = 0
         self.cache_refreshes = 0
 
@@ -43,7 +43,7 @@ class PatchSet(Dataset):
         self.cache = torch.zeros((self.patch_cache_size, 3, self.patch_size[1], self.patch_size[0]))
         self.load_patches()
 
-        print("Total Samples", (self.patch_x**2)*self.length)
+        print("Total Samples", self.patches_per_frame*self.length)
 
         print("Loading Complete")
 
@@ -66,11 +66,13 @@ class PatchSet(Dataset):
         self.progress = i
 
     def __len__(self):
-        return (self.patch_x**2)*self.length
+        return self.patches_per_frame*self.length
 
     def __getitem__(self, index):
         if(index-(self.cache_refreshes*self.patch_cache_size) > self.patch_cache_size):
             self.cache_refreshes += 1
             self.load_patches()
 
-        return self.cache[index % self.patch_cache_size]
+        patch = self.cache[index % self.patch_cache_size]
+
+        return patch, torch.clone(patch)

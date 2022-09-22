@@ -12,9 +12,20 @@ from time import time
 LAYERS = 3
 REDUCTION_FACTOR = 2**3
 
-ASPECT_RATIO = np.asarray([16, 9])
-BASE_SIZE = ASPECT_RATIO*REDUCTION_FACTOR
-PATCH_SIZE = BASE_SIZE*1
+FRAME_SIZE = np.asarray([1280, 720])
+PATCH_SIZE = np.asarray([80, 80])
 
-dataset = PatchSet(patch_size=PATCH_SIZE)
-dataloader = DataLoader(dataset, batch_size=16)
+patch_dataset = PatchSet(FRAME_SIZE, PATCH_SIZE, "movies\\nuclearFamily_Trim.mp4")
+patch_loader = DataLoader(patch_dataset, batch_size=1)
+
+
+input, label = iter(patch_loader).next()
+
+print(input.shape)
+
+model = ConvCompression()
+model.eval()
+
+output = model(input)
+
+print(output.shape)
