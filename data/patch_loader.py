@@ -13,7 +13,7 @@ import imageio
 import cv2
 
 PATH_ROOT = Path(os.path.curdir) / "data"
-FRAME_CACHE_SIZE = 10
+FRAME_CACHE_SIZE = 1500
 
 class PatchSet(Dataset):
     def __init__(self, frame_size, patch_size, movie_path):
@@ -49,6 +49,7 @@ class PatchSet(Dataset):
 
     def load_patches(self):
         size = min(self.length-self.progress, FRAME_CACHE_SIZE)
+        indexes = torch.randperm(size*self.patches_per_frame)
         i = self.progress
         j = 0
         
@@ -58,7 +59,7 @@ class PatchSet(Dataset):
             for l in range(self.patch_x):
                 for k in range(self.patch_y):
                     # print("j", j, "l", l, "k", k, "i", i)
-                    self.cache[j] = frame[:, k*self.patch_size[1]:k*self.patch_size[1]+self.patch_size[1], l*self.patch_size[0]:l*self.patch_size[0]+self.patch_size[0]]
+                    self.cache[indexes[j]] = frame[:, k*self.patch_size[1]:k*self.patch_size[1]+self.patch_size[1], l*self.patch_size[0]:l*self.patch_size[0]+self.patch_size[0]]
                     j += 1
 
             i += 1
