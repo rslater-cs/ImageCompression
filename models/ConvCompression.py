@@ -51,7 +51,11 @@ class ConvCompression(Module):
 
     def make_head(self, in_channels):
         return Sequential(
-            ConvTranspose2d(in_channels=in_channels, out_channels=3, kernel_size=4, stride=2, padding=1, bias=False),
+            ConvTranspose2d(in_channels=in_channels, out_channels=(in_channels//2), kernel_size=4, stride=2, padding=1, bias=False),
+            LeakyReLU(),
+            Dropout(0.5),
+            BatchNorm2d((in_channels//2)),
+            Conv2d(in_channels=(in_channels//2), out_channels=3, kernel_size=5, stride=1, padding=2),
             Tanh()
         )
 

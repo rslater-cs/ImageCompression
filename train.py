@@ -9,7 +9,7 @@ from tqdm import tqdm
 import numpy as np
 from time import time
 
-EPOCHS = 20
+EPOCHS = 10
 
 LAYERS = 3
 REDUCTION_FACTOR = 2**3
@@ -19,7 +19,7 @@ PATCH_SIZE = np.asarray([80, 80])
 
 VALID_PATCH = FRAME_SIZE / PATCH_SIZE
 
-BATCH_SIZE = 600
+BATCH_SIZE = 768
 
 if(np.all(VALID_PATCH % 1 != 0)):
     raise Exception("Frame of {}x{} cannot be split into even patches of {}x{}".format(FRAME_SIZE[0], FRAME_SIZE[1], PATCH_SIZE[0], PATCH_SIZE[1]))
