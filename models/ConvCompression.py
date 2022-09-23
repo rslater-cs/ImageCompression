@@ -10,16 +10,16 @@ class ConvCompression(Module):
         self.reduction_layer2 = self.make_reduction_layer(32, 128)
         self.reduction_layer3 = self.make_reduction_layer(128, 16)
 
-        self.compression_head = Sequential(
-            Conv2d(in_channels=128, out_channels=64, kernel_size=3, stride=1, padding=1),
-            ReLU(),
-            Dropout(0.5),
-            Conv2d(in_channels=64, out_channels=32, kernel_size=3, stride=1, padding=1),
-            ReLU(),
-            BatchNorm2d(32),
-            Conv2d(in_channels=32, out_channels=16, kernel_size=3, stride=1, padding=1),
-            ReLU(),
-        )
+        # self.compression_head = Sequential(
+        #     Conv2d(in_channels=128, out_channels=64, kernel_size=3, stride=1, padding=1),
+        #     ReLU(),
+        #     Dropout(0.5),
+        #     Conv2d(in_channels=64, out_channels=32, kernel_size=3, stride=1, padding=1),
+        #     ReLU(),
+        #     BatchNorm2d(32),
+        #     Conv2d(in_channels=32, out_channels=16, kernel_size=3, stride=1, padding=1),
+        #     ReLU(),
+        # )
 
         self.gen_layer1 = self.make_generative_layer(16, 128)
         self.gen_layer2 = self.make_generative_layer(128, 64)
@@ -37,25 +37,23 @@ class ConvCompression(Module):
             # BatchNorm2d(out_channels),
             Conv2d(in_channels=in_channels, out_channels=out_channels, kernel_size=4, stride=2, padding=1),
             ReLU(),
-            Dropout(0.5),
             BatchNorm2d(out_channels),
         )
 
     def make_generative_layer(self, in_channels, out_channels=32):
         return Sequential(
             ConvTranspose2d(in_channels=in_channels, out_channels=out_channels, kernel_size=4, stride=2, padding=1, bias=False),
-            LeakyReLU(),
-            Dropout(0.5),
+            ReLU(),
             BatchNorm2d(out_channels),
         )
 
     def make_head(self, in_channels):
         return Sequential(
             ConvTranspose2d(in_channels=in_channels, out_channels=(in_channels//2), kernel_size=4, stride=2, padding=1, bias=False),
-            LeakyReLU(),
-            Dropout(0.5),
+            ReLU(),
             BatchNorm2d((in_channels//2)),
-            Conv2d(in_channels=(in_channels//2), out_channels=3, kernel_size=5, stride=1, padding=2),
+            # Conv2d(in_channels=(in_channels//2), out_channels=3, kernel_size=5, stride=1, padding=2),
+            Conv2d(in_channels=(in_channels//2), out_channels=3, kernel_size=3, stride=1, padding=1),
             Tanh()
         )
 

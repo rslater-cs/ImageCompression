@@ -9,7 +9,7 @@ from tqdm import tqdm
 import numpy as np
 from time import time
 
-EPOCHS = 10
+EPOCHS = 20
 
 LAYERS = 3
 REDUCTION_FACTOR = 2**3
@@ -38,7 +38,7 @@ print(model)
 model = model.to(device)
 model.train()
 
-criterion = nn.CrossEntropyLoss()
+criterion = nn.MSELoss()
 optimizer = optim.Adam(model.parameters())
 
 patch_dataset = PatchSet(FRAME_SIZE, PATCH_SIZE, "movies\\nuclearFamily_Trim.mp4")
@@ -74,4 +74,4 @@ for epoch in range(EPOCHS):
             #     print(f'[{epoch + 1}, {index + 1:5d}] loss: {running_loss * 1000000 / 200000:.3f}')
             #     running_loss = 0.0
 
-torch.save(model.state_dict(), '.\saved_models\compressionnet_trimmed_black.pth')
+torch.save(model, '.\saved_models\compressionnet.pth')
