@@ -3,6 +3,7 @@ import torch.optim as optim
 import torch.nn as nn
 import torch.nn.functional as F
 from data.patch_loader import PatchSet
+from data.model_saver import save_model
 from torch.utils.data import DataLoader
 from models.ConvCompression import ConvCompression
 from tqdm import tqdm
@@ -52,26 +53,16 @@ for epoch in range(EPOCHS):
 
             inputs, labels = inputs.to(device), labels.to(device)
 
-            # print("Data Speed", time()-data_speed)
-
             optimizer.zero_grad()
 
-            model_speed = time()
             outputs = model(inputs)
-            # print("Model speed", time()-model_speed)
             loss = criterion(outputs, labels)
 
-            prop_speed = time()
             loss.backward()
             optimizer.step()
-            # print("Prop Speed", time()-prop_speed)
 
             tepoch.set_postfix(loss=loss.item())
 
-            data_speed = time()
+saved_path = save_model(model)
 
-            # if(index % 200000):
-            #     print(f'[{epoch + 1}, {index + 1:5d}] loss: {running_loss * 1000000 / 200000:.3f}')
-            #     running_loss = 0.0
-
-torch.save(model, '.\saved_models\compressionnet2.pth')
+print("Model saved at:", saved_path)
