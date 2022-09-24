@@ -7,8 +7,9 @@ class ConvCompression(Module):
         super(ConvCompression, self).__init__()
 
         self.reduction_layer1 = self.make_reduction_layer(3, 64)
-        self.reduction_layer2 = self.make_reduction_layer(64, 256)
-        self.reduction_layer3 = self.make_reduction_layer(256, 16)
+        self.reduction_layer2 = self.make_reduction_layer(64, 128)
+        self.reduction_layer3 = self.make_reduction_layer(128, 256)
+        self.reduction_layer4 = self.make_reduction_layer(256, 16)
 
         # self.compression_head = Sequential(
         #     Conv2d(in_channels=128, out_channels=64, kernel_size=3, stride=1, padding=1),
@@ -21,9 +22,24 @@ class ConvCompression(Module):
         #     ReLU(),
         # )
 
-        self.gen_layer1 = self.make_generative_layer(16, 256)
-        self.gen_layer2 = self.make_generative_layer(256, 128)
+        self.gen_layer1 = self.make_generative_layer(16, 512)
+        self.gen_layer2 = self.make_generative_layer(512, 256)
+        self.gen_layer3 = self.make_generative_layer(256, 128)
         self.head = self.make_head(128)
+
+        self.encoder = Sequential(
+            self.reduction_layer1,
+            self.reduction_layer2,
+            self.reduction_layer3,
+            self.reduction_layer4
+        )
+        
+        self.decoder = Sequential(
+            self.gen_layer1,
+            self.gen_layer2,
+            self.gen_layer3,
+            self.head
+        )
 
     def make_reduction_layer(self, in_channels, out_channels=32):
         return Sequential(
@@ -58,13 +74,16 @@ class ConvCompression(Module):
         )
 
     def forward(self, x):
-        x = self.reduction_layer1(x)
-        x = self.reduction_layer2(x)
-        x = self.reduction_layer3(x)
-        # x = self.compression_head(x)
+        # x = self.reduction_layer1(x)
+        # x = self.reduction_layer2(x)
+        # x = self.reduction_layer3(x)
+        # # x = self.compression_head(x)
 
-        x = self.gen_layer1(x)
-        x = self.gen_layer2(x)
-        x = self.head(x)
+        # x = self.gen_layer1(x)
+        # x = self.gen_layer2(x)
+        # x = self.head(x)
+
+        x = self.encoder(x)
+        x = self.decoder(x)
 
         return x
