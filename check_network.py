@@ -11,6 +11,8 @@ PATCH_SIZE = (80, 80)
 ToImage = transforms.ToPILImage()
 ToTensor = transforms.ToTensor()
 
+device = "cuda:0" if torch.cuda.is_available() else "cpu"
+
 def get_random_patch(frame: torch.Tensor) -> torch.Tensor:
     limit_x = frame.shape[2] // PATCH_SIZE[0]
     limit_y = frame.shape[1] // PATCH_SIZE[1]
@@ -32,8 +34,8 @@ def get_random_frame(path):
 
     return frame
 
-model = ConvCompression()
-model.load_state_dict(torch.load(".\\saved_models\\compressionnet_trimmed_black.pth"))
+model = torch.load(".\\saved_models\\compressionnet.pth").to(device)
+print(model)
 model.eval()
 
 frame = get_random_frame(".\\data\\movies\\nuclearFamily_Trim.mp4")
@@ -42,6 +44,7 @@ patch = get_random_patch(frame)
 
 print(patch.shape)
 patch = patch.reshape((1, patch.shape[0], patch.shape[1], patch.shape[2]))
+patch = patch.to(device)
 print(patch.shape)
 output = model(patch)
 print(output.shape)

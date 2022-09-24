@@ -19,7 +19,7 @@ PATCH_SIZE = np.asarray([80, 80])
 
 VALID_PATCH = FRAME_SIZE / PATCH_SIZE
 
-BATCH_SIZE = 768
+BATCH_SIZE = 600
 
 if(np.all(VALID_PATCH % 1 != 0)):
     raise Exception("Frame of {}x{} cannot be split into even patches of {}x{}".format(FRAME_SIZE[0], FRAME_SIZE[1], PATCH_SIZE[0], PATCH_SIZE[1]))
@@ -39,7 +39,7 @@ model = model.to(device)
 model.train()
 
 criterion = nn.MSELoss()
-optimizer = optim.Adam(model.parameters())
+optimizer = optim.Adam(model.parameters(), lr=1e-5)
 
 patch_dataset = PatchSet(FRAME_SIZE, PATCH_SIZE, "movies\\nuclearFamily_Trim.mp4")
 patch_loader = DataLoader(patch_dataset, batch_size=BATCH_SIZE)
@@ -74,4 +74,4 @@ for epoch in range(EPOCHS):
             #     print(f'[{epoch + 1}, {index + 1:5d}] loss: {running_loss * 1000000 / 200000:.3f}')
             #     running_loss = 0.0
 
-torch.save(model, '.\saved_models\compressionnet.pth')
+torch.save(model, '.\saved_models\compressionnet2.pth')

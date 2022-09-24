@@ -6,9 +6,9 @@ class ConvCompression(Module):
     def __init__(self):
         super(ConvCompression, self).__init__()
 
-        self.reduction_layer1 = self.make_reduction_layer(3, 32)
-        self.reduction_layer2 = self.make_reduction_layer(32, 128)
-        self.reduction_layer3 = self.make_reduction_layer(128, 16)
+        self.reduction_layer1 = self.make_reduction_layer(3, 64)
+        self.reduction_layer2 = self.make_reduction_layer(64, 256)
+        self.reduction_layer3 = self.make_reduction_layer(256, 16)
 
         # self.compression_head = Sequential(
         #     Conv2d(in_channels=128, out_channels=64, kernel_size=3, stride=1, padding=1),
@@ -21,9 +21,9 @@ class ConvCompression(Module):
         #     ReLU(),
         # )
 
-        self.gen_layer1 = self.make_generative_layer(16, 128)
-        self.gen_layer2 = self.make_generative_layer(128, 64)
-        self.head = self.make_head(64)
+        self.gen_layer1 = self.make_generative_layer(16, 256)
+        self.gen_layer2 = self.make_generative_layer(256, 128)
+        self.head = self.make_head(128)
 
     def make_reduction_layer(self, in_channels, out_channels=32):
         return Sequential(
