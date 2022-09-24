@@ -6,6 +6,7 @@ import cv2
 import random
 from PIL import Image
 import numpy as np
+from data.postprocessing import fix_bounds
 
 PATCH_SIZE = (80, 80)
 ToImage = transforms.ToPILImage()
@@ -38,7 +39,7 @@ model = torch.load(".\\saved_models\\compressionnet.pth").to(device)
 print(model)
 model.eval()
 
-frame = get_random_frame(".\\data\\movies\\nuclearFamily_Trim.mp4")
+frame = get_random_frame(".\\data\\movies\\nuclearFamily.mp4")
 print(frame.shape)
 patch = get_random_patch(frame)
 
@@ -49,6 +50,7 @@ print(patch.shape)
 output = model(patch)
 print(output.shape)
 
+output = fix_bounds(output)
 image_patch = ToImage(patch[0])
 image_output = ToImage(output[0])
 
