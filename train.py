@@ -10,7 +10,7 @@ from tqdm import tqdm
 import numpy as np
 from time import time
 
-EPOCHS = 20
+EPOCHS = 5
 
 LAYERS = 3
 REDUCTION_FACTOR = 2**3

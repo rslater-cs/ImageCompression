@@ -2,3 +2,6 @@
 data/merged_movie
 data/patches
 data/movies
+data/__pycache__/model_saver.cpython-38.pyc
+data/__pycache__/patch_loader.cpython-38.pyc
+data/__pycache__/postprocessing.cpython-38.pyc

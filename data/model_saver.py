@@ -9,7 +9,10 @@ def save_model(model):
 
     networks.sort(key= lambda x: x[1])
 
-    max_id = networks[-1][1]
+    if(len(networks) == 0):
+        max_id = -1
+    else:
+        max_id = networks[-1][1]
 
     network_id = max_id+1
 
