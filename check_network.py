@@ -8,7 +8,7 @@ from PIL import Image
 import numpy as np
 from data.postprocessing import fix_bounds
 
-PATCH_SIZE = (80, 80)
+PATCH_SIZE = (1280, 720)
 FRAME_SIZE = (1280, 720)
 ToImage = transforms.ToPILImage()
 ToTensor = transforms.ToTensor()
@@ -74,7 +74,7 @@ def to_frame(patches: torch.Tensor) -> torch.Tensor:
 
     return frame
 
-model = torch.load(".\\saved_models\\compressionnet_1\\compressionnet.pth").to(device)
+model = torch.load(".\\saved_models\\compressionnet_3\\compressionnet.pth").to(device)
 print(model)
 model.eval()
 

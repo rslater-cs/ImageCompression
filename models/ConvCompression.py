@@ -6,10 +6,10 @@ class ConvCompression(Module):
         super(ConvCompression, self).__init__()
 
         self.encoder = Sequential(
-            self.make_reduction_layer(3, 64),
-            self.make_reduction_layer(64, 128),
-            self.make_reduction_layer(128, 256),
-            self.make_reduction_layer(256, 16)
+            self.make_reduction_layer(3, 32),
+            self.make_reduction_layer(32, 64),
+            self.make_reduction_layer(64, 256),
+            self.make_reduction_layer(256, 32),
         )
 
         self.midpoint = Sequential(
@@ -19,10 +19,10 @@ class ConvCompression(Module):
         )
         
         self.decoder = Sequential(
-            self.make_generative_layer(16, 256),
-            self.make_generative_layer(256, 128),
-            self.make_generative_layer(128, 64),
-            self.make_head(64)
+            self.make_generative_layer(32, 256),
+            self.make_generative_layer(256, 64),
+            self.make_generative_layer(64, 32),
+            self.make_head(32),
         )
 
     def make_reduction_layer(self, in_channels, out_channels=32):
@@ -51,6 +51,7 @@ class ConvCompression(Module):
     def forward(self, x):
 
         x = self.encoder(x)
+
         # x = self.midpoint(x)
         # x = x.view((-1,1,10,10))
         x = self.decoder(x)
