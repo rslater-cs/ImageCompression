@@ -43,6 +43,7 @@ patch_dataset = PatchSet(FRAME_SIZE, PATCH_SIZE, "movies\\nuclearFamily_Trim.mp4
 patch_loader = DataLoader(patch_dataset, batch_size=BATCH_SIZE)
 
 inputs, labels = iter(patch_loader).next()
+inputs, labels = inputs.to(device), labels.to(device)
 
 outputs = model(inputs)
 

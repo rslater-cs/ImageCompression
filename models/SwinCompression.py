@@ -24,10 +24,15 @@ class Encoder(nn.Module):
     def __init__(self):
         super().__init__()
 
-        self.encoder = SwinTransformer(patch_size=[5,5], embed_dim=48, depths=[2,2,2,2], num_heads=[7,7,7,7], window_size=[5,5])
-        encoder.avgpool = NoneLayer()
-        encoder.norm = NoneLayer()
-        encoder.head = NoneLayer()
+        self.encoder = SwinTransformer(patch_size=[4,4], embed_dim=48, depths=[2,2,2,2], num_heads=[7,7,7,7], window_size=[4,4])
+        self.encoder.avgpool = NoneLayer()
+        self.encoder.norm = NoneLayer()
+        self.encoder.head = NoneLayer()
+
+    def forward(self, x):
+        x = self.encoder(x)
+
+        return x
 
 class PatchSplitter(nn.Module):
 
