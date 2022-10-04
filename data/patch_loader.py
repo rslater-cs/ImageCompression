@@ -13,7 +13,7 @@ import imageio
 import cv2
 
 PATH_ROOT = Path(os.path.curdir) / "data"
-FRAME_CACHE_SIZE = 1500
+FRAME_CACHE_SIZE = 2
 
 class PatchSet(Dataset):
     def __init__(self, frame_size, patch_size, movie_path):
