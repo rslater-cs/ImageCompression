@@ -1,16 +1,10 @@
 import torch.nn as nn
 import torch
-from torchvision.models.swin_transformer import SwinTransformer, ShiftedWindowAttention
+from torchvision.models.swin_transformer import SwinTransformer, ShiftedWindowAttention, SwinTransformerBlock
 
-def get_n_params(model):
-    pp=0
-    for p in list(model.parameters()):
-        nn=1
-        for s in list(p.size()):
-            nn = nn*s
-        pp += nn
-    return pp
-
+# For editing the original Swin Transformer the classification layers
+# need to be removed, this class implements the equivilent of 
+# deleting a layer
 class NoneLayer(nn.Module):
 
     def __init__(self):
@@ -19,12 +13,14 @@ class NoneLayer(nn.Module):
     def forward(self, x):
         return x
 
+# The encoder utilises a normal Swin Transformer with the classification
+# layers removed
 class Encoder(nn.Module):
 
     def __init__(self):
         super().__init__()
 
-        self.encoder = SwinTransformer(patch_size=[4,4], embed_dim=48, depths=[2,2,2,2], num_heads=[7,7,7,7], window_size=[4,4])
+        self.encoder = SwinTransformer(patch_size=[2,2], embed_dim=48, depths=[2,2,2,2], num_heads=[2,2,2,2], window_size=[2,2])
         self.encoder.avgpool = NoneLayer()
         self.encoder.norm = NoneLayer()
         self.encoder.head = NoneLayer()
@@ -34,6 +30,8 @@ class Encoder(nn.Module):
 
         return x
 
+# While the normal Swin Tranformer merges patches, the decompression requires 
+# the patches be split to reach the original resolution of the input image
 class PatchSplitter(nn.Module):
 
     def __init__(self, input_resolution, dim, norm_layer=nn.LayerNorm):
@@ -43,29 +41,6 @@ class PatchSplitter(nn.Module):
         self.reduction = nn.Linear(4*dim, 2*dim, bias=False)
         self.enlargement = nn.Linear(dim, 2*dim)
         self.norm = norm_layer(dim)
-
-    # def forward(self, x):
-    #     """
-    #     x: B, H*W, C
-    #     """
-    #     H, W = self.input_resolution
-    #     B, L, C = x.shape
-    #     assert L == H * W, "input feature has wrong size"
-    #     assert H % 2 == 0 and W % 2 == 0, f"x size ({H}*{W}) are not even."
-
-    #     x = x.view(B, H, W, C)
-
-    #     x0 = x[:, 0::2, 0::2, :]  # B H/2 W/2 C
-    #     x1 = x[:, 1::2, 0::2, :]  # B H/2 W/2 C
-    #     x2 = x[:, 0::2, 1::2, :]  # B H/2 W/2 C
-    #     x3 = x[:, 1::2, 1::2, :]  # B H/2 W/2 C
-    #     x = torch.cat([x0, x1, x2, x3], -1)  # B H/2 W/2 4*C
-    #     x = x.view(B, -1, 4 * C)  # B H/2*W/2 4*C
-
-    #     x = self.norm(x)
-    #     x = self.reduction(x)
-
-    #     return x
 
     def forward(self, x: torch.Tensor):
 
@@ -94,4 +69,12 @@ class PatchSplitter(nn.Module):
         x[:, 0::2, 1::2, :] = x2
         x[:, 1::2, 1::2, :] = x3
 
+        return x
+
+class Decoder(nn.Module):
+
+    def __init__(self):
+        super().__init__()
+
+    def forward(x):
         return x

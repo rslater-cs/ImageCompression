@@ -39,12 +39,14 @@ print(model)
 model = model.to(device)
 model.eval()
 
-patch_dataset = PatchSet(FRAME_SIZE, PATCH_SIZE, "movies\\nuclearFamily_Trim.mp4")
+patch_dataset = PatchSet(FRAME_SIZE, PATCH_SIZE, "movies\\1280_720\\nuclearFamily.mp4")
 patch_loader = DataLoader(patch_dataset, batch_size=BATCH_SIZE)
 
 inputs, labels = iter(patch_loader).next()
 inputs, labels = inputs.to(device), labels.to(device)
 
 outputs = model(inputs)
+
+print("Network done")
 
 print(outputs.shape)

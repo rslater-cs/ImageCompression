@@ -58,7 +58,6 @@ class PatchSet(Dataset):
 
             for l in range(self.patch_x):
                 for k in range(self.patch_y):
-                    # print("j", j, "l", l, "k", k, "i", i)
                     self.cache[indexes[j]] = frame[:, k*self.patch_size[1]:k*self.patch_size[1]+self.patch_size[1], l*self.patch_size[0]:l*self.patch_size[0]+self.patch_size[0]]
                     j += 1
 
