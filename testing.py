@@ -20,7 +20,7 @@ PATCH_SIZE = np.asarray([1280, 720])
 
 VALID_PATCH = FRAME_SIZE / PATCH_SIZE
 
-BATCH_SIZE = 1
+BATCH_SIZE = 2
 
 if(np.all(VALID_PATCH % 1 != 0)):
     raise Exception("Frame of {}x{} cannot be split into even patches of {}x{}".format(FRAME_SIZE[0], FRAME_SIZE[1], PATCH_SIZE[0], PATCH_SIZE[1]))
@@ -34,7 +34,7 @@ device = "cuda:0" if torch.cuda.is_available() else "cpu"
 
 print("Using", device)
 
-model = Encoder()
+model = Encoder(patch_size=[2,2], embed_dim=48, depths=[2,2,2,2], num_heads=[2,2,2,2], window_size=[2,2])
 print(model)
 model = model.to(device)
 model.eval()

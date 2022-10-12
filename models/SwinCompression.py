@@ -1,3 +1,5 @@
+from typing import Optional, Callable, List, Any
+
 import torch.nn as nn
 import torch
 from torchvision.models.swin_transformer import SwinTransformer, ShiftedWindowAttention, SwinTransformerBlock
@@ -15,19 +17,29 @@ class NoneLayer(nn.Module):
 
 # The encoder utilises a normal Swin Transformer with the classification
 # layers removed
-class Encoder(nn.Module):
+class Encoder(SwinTransformer):
 
-    def __init__(self):
-        super().__init__()
-
-        self.encoder = SwinTransformer(patch_size=[2,2], embed_dim=48, depths=[2,2,2,2], num_heads=[2,2,2,2], window_size=[2,2])
-        self.encoder.avgpool = NoneLayer()
-        self.encoder.norm = NoneLayer()
-        self.encoder.head = NoneLayer()
+    def __init__(self,
+        patch_size: List[int],
+        embed_dim: int,
+        depths: List[int],
+        num_heads: List[int],
+        window_size: List[int],
+        mlp_ratio: float = 4.0,
+        dropout: float = 0.0,
+        attention_dropout: float = 0.0,
+        stochastic_depth_prob: float = 0.0,
+        num_classes: int = 1000,
+        norm_layer: Optional[Callable[..., nn.Module]] = None,
+        block: Optional[Callable[..., nn.Module]] = None
+        ):
+        super().__init__(patch_size, embed_dim, depths, num_heads, 
+            window_size, mlp_ratio, dropout, attention_dropout, 
+            stochastic_depth_prob, num_classes, norm_layer, block)
 
     def forward(self, x):
-        x = self.encoder(x)
-
+        x = self.features(x)
+        x = self.norm(x)
         return x
 
 # While the normal Swin Tranformer merges patches, the decompression requires 
