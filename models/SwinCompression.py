@@ -1,21 +1,11 @@
 from typing import Optional, Callable, List, Any
 from functools import partial
+from pathlib import Path
 
 import torch.nn as nn
 import torch
 from torchvision.models.swin_transformer import SwinTransformer, ShiftedWindowAttention, SwinTransformerBlock, Permute
 from time import time
-
-# For editing the original Swin Transformer the classification layers
-# need to be removed, this class implements the equivilent of 
-# deleting a layer
-class NoneLayer(nn.Module):
-
-    def __init__(self):
-        super().__init__()
-
-    def forward(self, x):
-        return x
 
 # The encoder utilises a normal Swin Transformer with the classification
 # layers removed
@@ -50,13 +40,20 @@ class Encoder(SwinTransformer):
 
 # While the normal Swin Tranformer merges patches, the decompression requires 
 # the patches be split to reach the original resolution of the input image
-class PatchSplitter(nn.Module):
+class PatchSplitting(nn.Module):
 
     def __init__(self, dim, norm_layer: Callable[..., nn.Module] = nn.LayerNorm):
         super().__init__()
         self.dim = dim
         self.enlargement = nn.Linear(dim, 2*dim)
         self.norm = norm_layer(dim)
+
+    # Check page 17 of notes for diagram of plans
+    def split_first(self, x: torch.Tensor):
+        return x
+
+    def enlargement_first(self, x: torch.Tensor):
+        return x
 
     def forward(self, x: torch.Tensor):
         B, H, W, C = x.shape
@@ -65,26 +62,39 @@ class PatchSplitter(nn.Module):
 
         x = self.norm(x) # B H W C
 
+        diff = C//2
+
+        x_s = torch.split(x, split_size_or_sections=diff, dim=3)
+
+        print(x.shape)
         x = self.enlargement(x) # B H W 2C
+        print("e:",x.shape)
 
         # x = x.view(B, H, W, 2*C) # B H W 2C
 
-        diff = C//2
+        # x0 = x[:,:,:,0:diff]        # B H W C/2
+        # x1 = x[:,:,:,diff:2*diff]   # B H W C/2
+        # x2 = x[:,:,:,2*diff:3*diff] # B H W C/2
+        # x3 = x[:,:,:,3*diff:4*diff] # B H W C/2
 
-        x0 = x[:,:,:,0:diff]        # B H W C/2
-        x1 = x[:,:,:,diff:2*diff]   # B H W C/2
-        x2 = x[:,:,:,2*diff:3*diff] # B H W C/2
-        x3 = x[:,:,:,3*diff:4*diff] # B H W C/2
+        x_s = torch.split(x, split_size_or_sections=diff, dim=3)
 
-        x = torch.empty(B, 2*H, 2*W, C//2) # B 2*W 2*H C/2
+        x = torch.empty(B, 2*H, 2*W, C//2) # B 2H 2W .5C
 
-        x[:, 0::2, 0::2, :] = x0
-        x[:, 1::2, 0::2, :] = x1
-        x[:, 0::2, 1::2, :] = x2
-        x[:, 1::2, 1::2, :] = x3
+        # x[:, 0::2, 0::2, :] = x0
+        # x[:, 1::2, 0::2, :] = x1
+        # x[:, 0::2, 1::2, :] = x2
+        # x[:, 1::2, 1::2, :] = x3
+
+        x[:, 0::2, 0::2, :] = x_s[0]
+        x[:, 1::2, 0::2, :] = x_s[1]
+        x[:, 0::2, 1::2, :] = x_s[2]
+        x[:, 1::2, 1::2, :] = x_s[3]
 
         return x
 
+# Used to decompress the image from (H, W, C) to (H*d**2, W*d**2, C//d**2)
+# where d = depth
 class Decoder(nn.Module):
 
     def __init__(self,
@@ -147,7 +157,7 @@ class Decoder(nn.Module):
             layers.append(nn.Sequential(*stage))
             # add patch merging layer
             # if i_stage < (len(depths) - 1):
-            layers.append(PatchSplitter(dim, norm_layer))
+            layers.append(PatchSplitting(dim, norm_layer))
         self.features = nn.Sequential(*layers)
 
         num_features = embed_dim // (2 ** len(depths))
@@ -169,6 +179,61 @@ class Decoder(nn.Module):
         x = self.features(x)
         x = torch.permute(x, (0, 3, 1, 2))
         x = self.head(x)
+        return x
+
+class FullSwinCompressor(nn.Module):
+    def __init__(self,
+        transfer_dim: int,
+        patch_size: List[int],
+        embed_dim: int,
+        depths: List[int],
+        num_heads: List[int],
+        window_size: List[int],
+        mlp_ratio: float = 4.0,
+        dropout: float = 0.0,
+        attention_dropout: float = 0.0,
+        stochastic_depth_prob: float = 0.0,
+        norm_layer: Optional[Callable[..., nn.Module]] = None,
+        block: Optional[Callable[..., nn.Module]] = None,
+        ):
+        super().__init__()
+
+        self.encoder = Encoder(
+            embed_dim=embed_dim, 
+            output_dim=transfer_dim, 
+            patch_size=patch_size, 
+            depths=depths, 
+            num_heads=num_heads, 
+            window_size=window_size,
+            mlp_ratio=mlp_ratio,
+            dropout=dropout,
+            attention_dropout=attention_dropout,
+            stochastic_depth_prob=stochastic_depth_prob,
+            norm_layer=norm_layer,
+            block=block
+        )
+        
+        output_dim = embed_dim * 2 ** (len(depths)-1)
+
+        self.decoder = Decoder(
+            embed_dim=output_dim, 
+            input_embed_dim=transfer_dim,
+            patch_size=patch_size, 
+            depths=depths, 
+            num_heads=num_heads, 
+            window_size=window_size,
+            mlp_ratio=mlp_ratio,
+            dropout=dropout,
+            attention_dropout=attention_dropout,
+            stochastic_depth_prob=stochastic_depth_prob,
+            norm_layer=norm_layer,
+            block=block
+        )
+
+    def forward(self, x):
+        x = self.encoder(x)
+        x = self.decoder(x)
+
         return x
 
 # NEXT MOVE: Make movie dataset into resolution of (1024, 576) which will allow 6 reduction layers of 

@@ -1,14 +1,16 @@
-import torch
+from torch import cuda
 import torch.optim as optim
-import torch.nn as nn
-import torch.nn.functional as F
+from torch.nn import MSELoss
 from data.patch_loader import PatchSet
 from data.model_saver import save_model
 from torch.utils.data import DataLoader
-from models.ConvCompression import ConvCompression
+from models import ConvCompression, SwinCompression
 from tqdm import tqdm
 import numpy as np
 from time import time
+
+NETWORK_TYPE = "SwinCompression"
+# NETWORK_TYPE = "ConvCompression"
 
 EPOCHS = 15
 
@@ -30,17 +32,14 @@ VALID_REDUCTION = PATCH_SIZE / REDUCTION_FACTOR
 if(np.all(VALID_REDUCTION % 1 != 0)):
     raise Exception("Patch of {}x{} cannot be reduced by factor {}".format(PATCH_SIZE[0], PATCH_SIZE[1], REDUCTION_FACTOR))
 
-device = "cuda:0" if torch.cuda.is_available() else "cpu"
+device = "cuda:0" if cuda.is_available() else "cpu"
 
 print("Using", device)
 
-model = ConvCompression()
-print(model)
-model = model.to(device)
-model.train()
+compressor = SwinCompression.FullSwinCompressor(embed_dim=24, output_dim=1, patch_size=[2,2], depths=[2,2,2,2], num_heads=[2,2,2,2], window_size=[2,2])
 
-criterion = nn.MSELoss()
-optimizer = optim.Adam(model.parameters(), lr=1e-5)
+criterion = MSELoss()
+optimizer = optim.Adam(compressor.parameters(), lr=1e-5)
 
 patch_dataset = PatchSet(FRAME_SIZE, PATCH_SIZE, "movies\\nuclearFamily_Trim.mp4")
 patch_loader = DataLoader(patch_dataset, batch_size=BATCH_SIZE)
@@ -55,14 +54,14 @@ for epoch in range(EPOCHS):
 
             optimizer.zero_grad()
 
-            outputs = model(inputs)
-            loss = criterion(outputs, labels)
+            output_images = compressor(inputs)
+            loss = criterion(output_images, labels)
 
             loss.backward()
             optimizer.step()
 
             tepoch.set_postfix(loss=loss.item())
 
-saved_path = save_model(model)
+saved_path = save_model(compressor.encoder, compressor.decoder, NETWORK_TYPE)
 
 print("Model saved at:", saved_path)
