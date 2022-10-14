@@ -1,4 +1,5 @@
-from models.SwinCompression import Encoder
+from bz2 import compress
+from models.SwinCompression import Encoder, Decoder
 from data.patch_loader import PatchSet
 import torch
 import torch.optim as optim
@@ -20,7 +21,7 @@ PATCH_SIZE = np.asarray([1280, 720])
 
 VALID_PATCH = FRAME_SIZE / PATCH_SIZE
 
-BATCH_SIZE = 2
+BATCH_SIZE = 1
 
 if(np.all(VALID_PATCH % 1 != 0)):
     raise Exception("Frame of {}x{} cannot be split into even patches of {}x{}".format(FRAME_SIZE[0], FRAME_SIZE[1], PATCH_SIZE[0], PATCH_SIZE[1]))
@@ -34,19 +35,32 @@ device = "cuda:0" if torch.cuda.is_available() else "cpu"
 
 print("Using", device)
 
-model = Encoder(patch_size=[2,2], embed_dim=48, depths=[2,2,2,2], num_heads=[2,2,2,2], window_size=[2,2])
-print(model)
-model = model.to(device)
-model.eval()
+encoder = Encoder(embed_dim=24, output_dim=1, patch_size=[2,2], depths=[2,2,2,2], num_heads=[2,2,2,2], window_size=[2,2])
+decoder = Decoder(input_embed_dim=1, embed_dim=192, patch_size=[2,2], depths=[2,2,2,2], num_heads=[2,2,2,2], window_size=[2,2])
+
+encoder = encoder.to(device)
+encoder.eval()
+
+decoder = decoder.to(device)
+decoder.eval()
 
 patch_dataset = PatchSet(FRAME_SIZE, PATCH_SIZE, "movies\\1280_720\\nuclearFamily.mp4")
 patch_loader = DataLoader(patch_dataset, batch_size=BATCH_SIZE)
 
-inputs, labels = iter(patch_loader).next()
-inputs, labels = inputs.to(device), labels.to(device)
+patch_iter = iter(patch_loader)
 
-outputs = model(inputs)
+for i in range(5):
+    inputs, labels = patch_iter.next()
+    inputs, labels = inputs.to(device), labels.to(device)
+    start_encoder = time()
+    compressed = encoder(inputs)
+    print(compressed.shape)
+    start_decoder = time()
+    decompressed = decoder(compressed)
+    end_decoder = time()
+    print(decompressed.shape)
 
-print("Network done")
+    print("ENCODER TIME:", start_decoder-start_encoder)
+    print("DECODER TIME", end_decoder-start_decoder)
 
-print(outputs.shape)
+    print("Network done")

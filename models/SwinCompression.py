@@ -1,8 +1,10 @@
 from typing import Optional, Callable, List, Any
+from functools import partial
 
 import torch.nn as nn
 import torch
-from torchvision.models.swin_transformer import SwinTransformer, ShiftedWindowAttention, SwinTransformerBlock
+from torchvision.models.swin_transformer import SwinTransformer, ShiftedWindowAttention, SwinTransformerBlock, Permute
+from time import time
 
 # For editing the original Swin Transformer the classification layers
 # need to be removed, this class implements the equivilent of 
@@ -22,6 +24,7 @@ class Encoder(SwinTransformer):
     def __init__(self,
         patch_size: List[int],
         embed_dim: int,
+        output_dim: int,
         depths: List[int],
         num_heads: List[int],
         window_size: List[int],
@@ -36,38 +39,37 @@ class Encoder(SwinTransformer):
         super().__init__(patch_size, embed_dim, depths, num_heads, 
             window_size, mlp_ratio, dropout, attention_dropout, 
             stochastic_depth_prob, num_classes, norm_layer, block)
+        num_features = embed_dim * 2 ** (len(depths) - 1)
+        self.out_conv = nn.Conv2d(num_features, output_dim, kernel_size=1, stride=1)
 
     def forward(self, x):
         x = self.features(x)
-        x = self.norm(x)
+        x = torch.permute(x, (0, 3, 1, 2))
+        x = self.out_conv(x)
         return x
 
 # While the normal Swin Tranformer merges patches, the decompression requires 
 # the patches be split to reach the original resolution of the input image
 class PatchSplitter(nn.Module):
 
-    def __init__(self, input_resolution, dim, norm_layer=nn.LayerNorm):
+    def __init__(self, dim, norm_layer: Callable[..., nn.Module] = nn.LayerNorm):
         super().__init__()
-        self.input_resolution = input_resolution
         self.dim = dim
-        self.reduction = nn.Linear(4*dim, 2*dim, bias=False)
         self.enlargement = nn.Linear(dim, 2*dim)
         self.norm = norm_layer(dim)
 
     def forward(self, x: torch.Tensor):
+        B, H, W, C = x.shape
 
-        B, L, C = x.shape
-        H, W = self.input_resolution
-
-        assert L == H * W, "input feature has wrong size"
         assert C % 2 == 0, "channels not divisible by 2"
 
-        x = self.norm(x)
-        x = self.enlargement(x) # B H*W 2C
+        x = self.norm(x) # B H W C
 
-        x = x.view(B, H, W, 2*C) # B H W 2C
+        x = self.enlargement(x) # B H W 2C
 
-        diff = (2*C)//4
+        # x = x.view(B, H, W, 2*C) # B H W 2C
+
+        diff = C//2
 
         x0 = x[:,:,:,0:diff]        # B H W C/2
         x1 = x[:,:,:,diff:2*diff]   # B H W C/2
@@ -85,8 +87,90 @@ class PatchSplitter(nn.Module):
 
 class Decoder(nn.Module):
 
-    def __init__(self):
+    def __init__(self,
+        input_embed_dim: int,
+        patch_size: List[int],
+        embed_dim: int,
+        depths: List[int],
+        num_heads: List[int],
+        window_size: List[int],
+        mlp_ratio: float = 4.0,
+        dropout: float = 0.0,
+        attention_dropout: float = 0.0,
+        stochastic_depth_prob: float = 0.0,
+        norm_layer: Optional[Callable[..., nn.Module]] = None,
+        block: Optional[Callable[..., nn.Module]] = None,
+    ):
         super().__init__()
 
-    def forward(x):
+        if block is None:
+            block = SwinTransformerBlock
+
+        if norm_layer is None:
+            norm_layer = partial(nn.LayerNorm, eps=1e-5)
+
+        layers: List[nn.Module] = []
+
+        layers.append(
+            nn.Sequential(
+                nn.Conv2d(
+                    input_embed_dim, embed_dim, kernel_size=1, stride=1
+                ),
+                Permute([0, 2, 3, 1]),
+                norm_layer(embed_dim)
+            )
+        )
+
+        total_stage_blocks = sum(depths)
+        stage_block_id = 0
+        # build SwinTransformer blocks
+        for i_stage in range(len(depths)):
+            stage: List[nn.Module] = []
+            dim = embed_dim // (2 ** i_stage)
+            for i_layer in range(depths[i_stage]):
+                # adjust stochastic depth probability based on the depth of the stage block
+                sd_prob = stochastic_depth_prob * float(stage_block_id) / (total_stage_blocks - 1)
+                stage.append(
+                    block(
+                        dim,
+                        num_heads[i_stage],
+                        window_size=window_size,
+                        shift_size=[0 if i_layer % 2 == 0 else w // 2 for w in window_size],
+                        mlp_ratio=mlp_ratio,
+                        dropout=dropout,
+                        attention_dropout=attention_dropout,
+                        stochastic_depth_prob=sd_prob,
+                        norm_layer=norm_layer,
+                    )
+                )
+                stage_block_id += 1
+            layers.append(nn.Sequential(*stage))
+            # add patch merging layer
+            # if i_stage < (len(depths) - 1):
+            layers.append(PatchSplitter(dim, norm_layer))
+        self.features = nn.Sequential(*layers)
+
+        num_features = embed_dim // (2 ** len(depths))
+        self.norm = norm_layer(num_features)
+
+        self.head = nn.Sequential(
+            nn.Conv2d(num_features, 3, kernel_size=1, stride=1),
+            nn.Tanh()
+        )
+
+        for m in self.modules():
+            if isinstance(m, nn.Linear):
+                nn.init.trunc_normal_(m.weight, std=0.02)
+                if m.bias is not None:
+                    nn.init.zeros_(m.bias)
+        
+
+    def forward(self, x):
+        x = self.features(x)
+        x = torch.permute(x, (0, 3, 1, 2))
+        x = self.head(x)
         return x
+
+# NEXT MOVE: Make movie dataset into resolution of (1024, 576) which will allow 6 reduction layers of 
+# output size (B, 1, 16, 9) resulting in a compressed image size of 576 bytes and a compressed movie of
+# 576*30*60*24 24,883,200 bytes === 24.9MB (movie is currently 422MB)
