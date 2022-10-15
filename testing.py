@@ -23,6 +23,8 @@ VALID_PATCH = FRAME_SIZE / PATCH_SIZE
 
 BATCH_SIZE = 1
 
+MOVIE_PATH = "C:\\Users\\ryans\\OneDrive - University of Surrey\\Documents\\Computer Science\\Modules\\Year3\\FYP\\MoviesDataset\\DVU_Challenge\\Movies\\1024_576\\nuclearFamily.mp4"
+
 if(np.all(VALID_PATCH % 1 != 0)):
     raise Exception("Frame of {}x{} cannot be split into even patches of {}x{}".format(FRAME_SIZE[0], FRAME_SIZE[1], PATCH_SIZE[0], PATCH_SIZE[1]))
 
@@ -44,7 +46,7 @@ encoder.eval()
 decoder = decoder.to(device)
 decoder.eval()
 
-patch_dataset = PatchSet(FRAME_SIZE, PATCH_SIZE, "movies\\1280_720\\nuclearFamily.mp4")
+patch_dataset = PatchSet(FRAME_SIZE, PATCH_SIZE, MOVIE_PATH)
 patch_loader = DataLoader(patch_dataset, batch_size=BATCH_SIZE)
 
 patch_iter = iter(patch_loader)

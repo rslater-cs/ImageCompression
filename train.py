@@ -2,7 +2,7 @@ from time import time
 
 from torch import cuda
 import torch.optim as optim
-from torch.nn import MSELoss
+from torch.nn import MSELoss, LayerNorm
 from torch.utils.data import DataLoader
 
 from tqdm import tqdm
@@ -16,53 +16,44 @@ from model_analyser import model_requirements
 NETWORK_TYPE = "SwinCompression"
 # NETWORK_TYPE = "ConvCompression"
 
-EPOCHS = 15
-
-LAYERS = 3
-REDUCTION_FACTOR = 2**3
+EPOCHS = 1
 
 FRAME_SIZE = np.asarray([1024, 576])
 PATCH_SIZE = np.asarray([1024, 576])
 
-VALID_PATCH = FRAME_SIZE / PATCH_SIZE
+BATCH_SIZE = 1
 
-BATCH_SIZE = 5
-
-if(np.all(VALID_PATCH % 1 != 0)):
-    raise Exception("Frame of {}x{} cannot be split into even patches of {}x{}".format(FRAME_SIZE[0], FRAME_SIZE[1], PATCH_SIZE[0], PATCH_SIZE[1]))
-
-VALID_REDUCTION = PATCH_SIZE / REDUCTION_FACTOR
-
-if(np.all(VALID_REDUCTION % 1 != 0)):
-    raise Exception("Patch of {}x{} cannot be reduced by factor {}".format(PATCH_SIZE[0], PATCH_SIZE[1], REDUCTION_FACTOR))
+MOVIE_PATH = "C:\\Users\\ryans\\OneDrive - University of Surrey\\Documents\\Computer Science\\Modules\\Year3\\FYP\\MoviesDataset\\DVU_Challenge\\Movies\\1024_576\\nuclearFamily.mp4"
 
 device = "cuda:0" if cuda.is_available() else "cpu"
 
 print("Using", device)
 
-# compressor = SwinCompression.FullSwinCompressor(embed_dim=16, transfer_dim=1, patch_size=[2,2], depths=[2,2,2,4,6,2], num_heads=[2,2,2,2,2,2], window_size=[2,2])
-compressor = ConvCompression.FullConvConvCompressor(32, 1, 6)
+compressor = SwinCompression.FullSwinCompressor(embed_dim=16, transfer_dim=1, patch_size=[2,2], depths=[2,2,2,4,6,2], num_heads=[2,2,2,2,2,2], window_size=[2,2])
+# compressor = ConvCompression.FullConvConvCompressor(32, 1, 6)
+compressor = compressor.to(device)
+print(compressor)
 param_count = model_requirements.get_parameters(compressor)
 print("TOTAL PARAMETERS:", f'{param_count:,}')
 
 criterion = MSELoss()
 optimizer = optim.Adam(compressor.parameters(), lr=1e-5)
 
-patch_dataset = PatchSet(FRAME_SIZE, PATCH_SIZE, "movies\\nuclearFamily_Trim.mp4")
+patch_dataset = PatchSet(FRAME_SIZE, PATCH_SIZE, MOVIE_PATH)
 patch_loader = DataLoader(patch_dataset, batch_size=BATCH_SIZE)
 
 for epoch in range(EPOCHS):
     with tqdm(patch_loader, unit="batch") as tepoch:
         data_speed = time()
-        for inputs, labels in tepoch:
+        for inputs in tepoch:
             tepoch.set_description(f"Epoch {epoch}")
 
-            inputs, labels = inputs.to(device), labels.to(device)
+            inputs = inputs.to(device)
 
             optimizer.zero_grad()
 
             output_images = compressor(inputs)
-            loss = criterion(output_images, labels)
+            loss = criterion(output_images, inputs)
 
             loss.backward()
             optimizer.step()

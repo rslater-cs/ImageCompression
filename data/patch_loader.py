@@ -69,10 +69,6 @@ class PatchSet(Dataset):
         return self.patches_per_frame*self.length
 
     def __getitem__(self, index):
-        if(index-(self.cache_refreshes*self.patch_cache_size) > self.patch_cache_size):
-            self.cache_refreshes += 1
-            self.load_patches()
+        patch = self.toTensor(self.movie.get_data(index))
 
-        patch = self.cache[index % self.patch_cache_size]
-
-        return patch, torch.clone(patch)
+        return patch

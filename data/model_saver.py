@@ -6,7 +6,7 @@ def save_model(encoder, decoder, type):
     encoder_name = "{}_encoder".format(type)
     decoder_name = "{}_decoder".format(type)
     networks = [(os.path.join(root, name), int(name.split("_")[1]))\
-        for name in os.listdir(".\\saved_models\\") if os.path.isdir(os.path.join(root, name))]
+        for name in os.listdir(".\\saved_models\\") if (os.path.isdir(os.path.join(root, name)) and type in name)]
 
     networks.sort(key= lambda x: x[1])
 
