@@ -1,59 +1,104 @@
-from torch.nn import Linear, ReLU, CrossEntropyLoss, Sequential, Module, Conv2d, BatchNorm2d, BatchNorm1d, Dropout, ConvTranspose2d, MaxPool2d, Tanh, LeakyReLU, Flatten
+from typing import List
+import torch.nn as nn
 
-class ConvCompression(Module):
+class Encoder(nn.Module):
+    def __init__(self, embed_dim: int, transfer_dim: int, reduction_layers: int):
+        super().__init__()
+        compress = []
 
-    def __init__(self):
-        super(ConvCompression, self).__init__()
+        prev_dim = 3
+        for i in range(reduction_layers):
+            dim = embed_dim*2**i
+            compress.append(self.make_layer(prev_dim, dim))
+            prev_dim = dim
 
-        self.encoder = Sequential(
-            self.make_reduction_layer(3, 32),
-            self.make_reduction_layer(32, 64),
-            self.make_reduction_layer(64, 256),
-            self.make_reduction_layer(256, 32),
+        self.compress = nn.Sequential(*compress)
+
+        self.head = nn.Sequential(
+            nn.Conv2d(prev_dim, transfer_dim, kernel_size=1, stride=1),
+            nn.ReLU(),
+            nn.BatchNorm2d(transfer_dim)
         )
 
-        self.midpoint = Sequential(
-            Flatten(),
-            Linear(5*5*16, 100),
-            ReLU()
-        )
-        
-        self.decoder = Sequential(
-            self.make_generative_layer(32, 256),
-            self.make_generative_layer(256, 64),
-            self.make_generative_layer(64, 32),
-            self.make_head(32),
-        )
-
-    def make_reduction_layer(self, in_channels, out_channels=32):
-        return Sequential(
-            Conv2d(in_channels=in_channels, out_channels=out_channels, kernel_size=4, stride=2, padding=1),
-            ReLU(),
-            BatchNorm2d(out_channels),
-        )
-
-    def make_generative_layer(self, in_channels, out_channels=32):
-        return Sequential(
-            ConvTranspose2d(in_channels=in_channels, out_channels=out_channels, kernel_size=4, stride=2, padding=1, bias=False),
-            ReLU(),
-            BatchNorm2d(out_channels),
-        )
-
-    def make_head(self, in_channels):
-        return Sequential(
-            ConvTranspose2d(in_channels=in_channels, out_channels=in_channels, kernel_size=4, stride=2, padding=1, bias=False),
-            ReLU(),
-            BatchNorm2d(in_channels),
-            Conv2d(in_channels=in_channels, out_channels=3, kernel_size=3, stride=1, padding=1),
-            Tanh()
+    def make_layer(self, in_channels, out_channels=32):
+        return nn.Sequential(
+            nn.Conv2d(in_channels=in_channels, out_channels=out_channels, kernel_size=4, stride=2, padding=1),
+            nn.ReLU(),
+            nn.BatchNorm2d(out_channels),
         )
 
     def forward(self, x):
+        x = self.compress(x)
+        x = self.head(x)
 
+        return x
+
+class Decoder(nn.Module):
+    def __init__(self, transfer_dim: int, embed_dim: int, reduction_layers: int):
+        super().__init__()
+
+        self.transfer = nn.Sequential(
+            nn.Conv2d(transfer_dim, embed_dim*2**(reduction_layers-1), kernel_size=1, stride=1),
+            nn.ReLU(),
+            nn.BatchNorm2d(embed_dim*2**(reduction_layers-1))
+        )
+
+        decompress: List[nn.Module] = []
+
+        prev_dim = embed_dim*2**(reduction_layers-1)
+        for i in range(reduction_layers-1):
+            dim = embed_dim*2**(reduction_layers-i-2)
+            print(dim)
+            decompress.append(self.make_layer(prev_dim, dim))
+            prev_dim = dim
+
+        self.decompress = nn.Sequential(*decompress)
+
+        self.head = self.make_head(prev_dim)
+
+    def make_layer(self, in_channels, out_channels=32):
+        return nn.Sequential(
+            nn.ConvTranspose2d(in_channels=in_channels, out_channels=out_channels, kernel_size=4, stride=2, padding=1, bias=False),
+            nn.ReLU(),
+            nn.BatchNorm2d(out_channels),
+        )
+
+    def make_head(self, in_channels):
+        return nn.Sequential(
+            nn.ConvTranspose2d(in_channels=in_channels, out_channels=in_channels//2, kernel_size=4, stride=2, padding=1, bias=False),
+            nn.ReLU(),
+            nn.BatchNorm2d(in_channels//2),
+            nn.Conv2d(in_channels=in_channels//2, out_channels=3, kernel_size=3, stride=1, padding=1),
+            nn.Tanh()
+        )
+
+    def forward(self, x):
+        x = self.transfer(x)
+        x = self.decompress(x)
+        x = self.head(x)
+
+        return x
+
+class FullConvConvCompressor(nn.Module):
+    def __init__(self, embed_dim: int, transfer_dim: int, reduction_layers: int):
+        super().__init__()
+
+        self.encoder = Encoder(
+            embed_dim=embed_dim, 
+            transfer_dim=transfer_dim, 
+            reduction_layers=reduction_layers
+            )
+
+        self.decoder = Decoder(
+            embed_dim=embed_dim,
+            transfer_dim=transfer_dim,
+            reduction_layers=reduction_layers
+        )
+
+    def forward(self, x):
         x = self.encoder(x)
-
-        # x = self.midpoint(x)
-        # x = x.view((-1,1,10,10))
         x = self.decoder(x)
 
         return x
+
+

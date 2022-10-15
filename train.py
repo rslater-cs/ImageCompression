@@ -1,13 +1,17 @@
+from time import time
+
 from torch import cuda
 import torch.optim as optim
 from torch.nn import MSELoss
-from data.patch_loader import PatchSet
-from data.model_saver import save_model
 from torch.utils.data import DataLoader
-from models import ConvCompression, SwinCompression
+
 from tqdm import tqdm
 import numpy as np
-from time import time
+
+from data.patch_loader import PatchSet
+from data.model_saver import save_model
+from models import ConvCompression, SwinCompression
+from model_analyser import model_requirements
 
 NETWORK_TYPE = "SwinCompression"
 # NETWORK_TYPE = "ConvCompression"
@@ -17,8 +21,8 @@ EPOCHS = 15
 LAYERS = 3
 REDUCTION_FACTOR = 2**3
 
-FRAME_SIZE = np.asarray([1280, 720])
-PATCH_SIZE = np.asarray([1280, 720])
+FRAME_SIZE = np.asarray([1024, 576])
+PATCH_SIZE = np.asarray([1024, 576])
 
 VALID_PATCH = FRAME_SIZE / PATCH_SIZE
 
@@ -36,7 +40,10 @@ device = "cuda:0" if cuda.is_available() else "cpu"
 
 print("Using", device)
 
-compressor = SwinCompression.FullSwinCompressor(embed_dim=24, output_dim=1, patch_size=[2,2], depths=[2,2,2,2], num_heads=[2,2,2,2], window_size=[2,2])
+# compressor = SwinCompression.FullSwinCompressor(embed_dim=16, transfer_dim=1, patch_size=[2,2], depths=[2,2,2,4,6,2], num_heads=[2,2,2,2,2,2], window_size=[2,2])
+compressor = ConvCompression.FullConvConvCompressor(32, 1, 6)
+param_count = model_requirements.get_parameters(compressor)
+print("TOTAL PARAMETERS:", f'{param_count:,}')
 
 criterion = MSELoss()
 optimizer = optim.Adam(compressor.parameters(), lr=1e-5)
