@@ -66,25 +66,11 @@ class PatchSplitting(nn.Module):
 
         x_s = torch.split(x, split_size_or_sections=diff, dim=3)
 
-        print(x.shape)
         x = self.enlargement(x) # B H W 2C
-        print("e:",x.shape)
-
-        # x = x.view(B, H, W, 2*C) # B H W 2C
-
-        # x0 = x[:,:,:,0:diff]        # B H W C/2
-        # x1 = x[:,:,:,diff:2*diff]   # B H W C/2
-        # x2 = x[:,:,:,2*diff:3*diff] # B H W C/2
-        # x3 = x[:,:,:,3*diff:4*diff] # B H W C/2
 
         x_s = torch.split(x, split_size_or_sections=diff, dim=3)
 
         x = torch.empty(B, 2*H, 2*W, C//2) # B 2H 2W .5C
-
-        # x[:, 0::2, 0::2, :] = x0
-        # x[:, 1::2, 0::2, :] = x1
-        # x[:, 0::2, 1::2, :] = x2
-        # x[:, 1::2, 1::2, :] = x3
 
         x[:, 0::2, 0::2, :] = x_s[0]
         x[:, 1::2, 0::2, :] = x_s[1]
