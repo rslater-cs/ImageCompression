@@ -32,7 +32,7 @@ print("Using", device)
 compressor = SwinCompression.FullSwinCompressor(embed_dim=16, transfer_dim=1, patch_size=[2,2], depths=[2,2,2,4,6,2], num_heads=[2,2,2,2,2,2], window_size=[2,2])
 # compressor = ConvCompression.FullConvConvCompressor(32, 1, 6)
 compressor = compressor.to(device)
-print(compressor)
+print(compressor.decoder)
 param_count = model_requirements.get_parameters(compressor)
 print("TOTAL PARAMETERS:", f'{param_count:,}')
 

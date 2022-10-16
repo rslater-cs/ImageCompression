@@ -64,13 +64,13 @@ class PatchSplitting(nn.Module):
 
         diff = C//2
 
-        x_s = torch.split(x, split_size_or_sections=diff, dim=3)
-
         x = self.enlargement(x) # B H W 2C
 
         x_s = torch.split(x, split_size_or_sections=diff, dim=3)
 
-        x = torch.empty(B, 2*H, 2*W, C//2) # B 2H 2W .5C
+        device = "cuda:0" if torch.cuda.is_available() else "cpu"
+
+        x = torch.empty(B, 2*H, 2*W, C//2).to(device)
 
         x[:, 0::2, 0::2, :] = x_s[0]
         x[:, 1::2, 0::2, :] = x_s[1]

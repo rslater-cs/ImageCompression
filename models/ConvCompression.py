@@ -48,7 +48,6 @@ class Decoder(nn.Module):
         prev_dim = embed_dim*2**(reduction_layers-1)
         for i in range(reduction_layers-1):
             dim = embed_dim*2**(reduction_layers-i-2)
-            print(dim)
             decompress.append(self.make_layer(prev_dim, dim))
             prev_dim = dim
 
