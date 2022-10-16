@@ -21,7 +21,7 @@ EPOCHS = 1
 FRAME_SIZE = np.asarray([1024, 576])
 PATCH_SIZE = np.asarray([1024, 576])
 
-BATCH_SIZE = 1
+BATCH_SIZE = 3
 
 MOVIE_PATH = "C:\\Users\\ryans\\OneDrive - University of Surrey\\Documents\\Computer Science\\Modules\\Year3\\FYP\\MoviesDataset\\DVU_Challenge\\Movies\\1024_576\\nuclearFamily.mp4"
 
