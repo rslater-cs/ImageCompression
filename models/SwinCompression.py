@@ -56,6 +56,7 @@ class PatchSplitting(nn.Module):
         return x
 
     def forward(self, x: torch.Tensor):
+        start = time()
         B, H, W, C = x.shape
 
         assert C % 2 == 0, "channels not divisible by 2"
@@ -77,6 +78,10 @@ class PatchSplitting(nn.Module):
         x[:, 0::2, 1::2, :] = x_s[2]
         x[:, 1::2, 1::2, :] = x_s[3]
 
+        end=time()
+
+        print("TIME TO SPLIT:", end-start)
+
         return x
 
 # Used to decompress the image from (H, W, C) to (H*d**2, W*d**2, C//d**2)
@@ -85,7 +90,6 @@ class Decoder(nn.Module):
 
     def __init__(self,
         input_embed_dim: int,
-        patch_size: List[int],
         embed_dim: int,
         depths: List[int],
         num_heads: List[int],
@@ -204,7 +208,6 @@ class FullSwinCompressor(nn.Module):
         self.decoder = Decoder(
             embed_dim=output_dim, 
             input_embed_dim=transfer_dim,
-            patch_size=patch_size, 
             depths=depths, 
             num_heads=num_heads, 
             window_size=window_size,
