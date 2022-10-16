@@ -56,7 +56,6 @@ class PatchSplitting(nn.Module):
         return x
 
     def forward(self, x: torch.Tensor):
-        start = time()
         B, H, W, C = x.shape
 
         assert C % 2 == 0, "channels not divisible by 2"
@@ -77,10 +76,6 @@ class PatchSplitting(nn.Module):
         x[:, 1::2, 0::2, :] = x_s[1]
         x[:, 0::2, 1::2, :] = x_s[2]
         x[:, 1::2, 1::2, :] = x_s[3]
-
-        end=time()
-
-        print("TIME TO SPLIT:", end-start)
 
         return x
 
