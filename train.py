@@ -21,7 +21,7 @@ EPOCHS = 5
 FRAME_SIZE = np.asarray([1024, 576])
 PATCH_SIZE = np.asarray([1024, 576])
 
-BATCH_SIZE = 3
+BATCH_SIZE = 1
 
 MOVIE_PATH = "C:\\Users\\ryans\\OneDrive - University of Surrey\\Documents\\Computer Science\\Modules\\Year3\\FYP\\MoviesDataset\\DVU_Challenge\\Movies\\1024_576\\nuclearFamily.mp4"
 
@@ -39,16 +39,17 @@ print("TOTAL PARAMETERS:", f'{param_count:,}')
 criterion = MSELoss()
 optimizer = optim.Adam(compressor.parameters(), lr=1e-5)
 
-patch_dataset = PatchSet(FRAME_SIZE, PATCH_SIZE, MOVIE_PATH)
+patch_dataset = PatchSet(MOVIE_PATH)
 patch_loader = DataLoader(patch_dataset, batch_size=BATCH_SIZE)
 
 for epoch in range(EPOCHS):
     with tqdm(patch_loader, unit="batch") as tepoch:
         data_speed = time()
-        for inputs, outputs in tepoch:
+        for inputs in tepoch:
             tepoch.set_description(f"Epoch {epoch}")
 
-            inputs, outputs = inputs.to(device), outputs.to(device)
+            inputs = inputs.to(device)
+            outputs = inputs.clone()
 
             optimizer.zero_grad()
 
