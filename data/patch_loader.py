@@ -66,9 +66,9 @@ class PatchSet(Dataset):
         self.progress = i
 
     def __len__(self):
-        return self.patches_per_frame*self.length
+        return (self.patches_per_frame*self.length)
 
     def __getitem__(self, index):
         patch = self.toTensor(self.movie.get_data(index))
 
-        return patch
+        return patch, patch.clone()

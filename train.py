@@ -16,7 +16,7 @@ from model_analyser import model_requirements
 NETWORK_TYPE = "SwinCompression"
 # NETWORK_TYPE = "ConvCompression"
 
-EPOCHS = 1
+EPOCHS = 5
 
 FRAME_SIZE = np.asarray([1024, 576])
 PATCH_SIZE = np.asarray([1024, 576])
@@ -45,15 +45,15 @@ patch_loader = DataLoader(patch_dataset, batch_size=BATCH_SIZE)
 for epoch in range(EPOCHS):
     with tqdm(patch_loader, unit="batch") as tepoch:
         data_speed = time()
-        for inputs in tepoch:
+        for inputs, outputs in tepoch:
             tepoch.set_description(f"Epoch {epoch}")
 
-            inputs = inputs.to(device)
+            inputs, outputs = inputs.to(device), outputs.to(device)
 
             optimizer.zero_grad()
 
             output_images = compressor(inputs)
-            loss = criterion(output_images, inputs)
+            loss = criterion(output_images, outputs)
 
             loss.backward()
             optimizer.step()
