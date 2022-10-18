@@ -8,7 +8,7 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 import numpy as np
 
-from data.patch_loader import PatchSet
+from data.frame_loader import FrameSet
 from data.model_saver import save_model
 from models import ConvCompression, SwinCompression
 from model_analyser import model_requirements
@@ -39,7 +39,7 @@ print("TOTAL PARAMETERS:", f'{param_count:,}')
 criterion = MSELoss()
 optimizer = optim.Adam(compressor.parameters(), lr=1e-5)
 
-patch_dataset = PatchSet(MOVIE_PATH)
+patch_dataset = FrameSet(MOVIE_PATH)
 patch_loader = DataLoader(patch_dataset, batch_size=BATCH_SIZE)
 
 for epoch in range(EPOCHS):

@@ -11,88 +11,46 @@ from time import time
 
 PatchSequence = List[Image.Image]
 
-ROOT_DIR = Path(os.path.curdir) / "data"
-PATCHES_DIR = ROOT_DIR / "patches"
+VIDEO_PATH = Path("C:\\Users\\ryans\\OneDrive - University of Surrey\\Documents\\Computer Science\\Modules\\Year3\\FYP\\MoviesDataset\\DVU_Challenge\\Movies\\1024_576")
+IMAGE_PATH = Path("C:\\Users\\ryans\\OneDrive - University of Surrey\\Documents\\Computer Science\\Modules\\Year3\\FYP\\MoviesDataset\\DVU_Challenge\\Movies\\1024_576_IMS")
 
-LAYERS = 3
-REDUCTION_FACTOR = 2**3
-
-ASPECT_RATIO = np.asarray([16, 9])
-BASE_SIZE = ASPECT_RATIO*REDUCTION_FACTOR
-PATCH_SIZE = BASE_SIZE*1
-
-WIDTH = 0
-HEIGHT = 1
-
-def to_patches(path: Path, tensor_image: torch.Tensor, progress: int) -> torch.Tensor:
-    if(tensor_image.shape[2] // PATCH_SIZE[WIDTH] != tensor_image.shape[2] / PATCH_SIZE[WIDTH]\
-        or\
-        tensor_image.shape[1] // PATCH_SIZE[HEIGHT] != tensor_image.shape[1] / PATCH_SIZE[HEIGHT]):
-            raise Exception("Patch size does not create even patches")
-
-    patch_x = tensor_image.shape[2] // PATCH_SIZE[WIDTH]
-    patch_y = tensor_image.shape[1] // PATCH_SIZE[HEIGHT]
-
-    for i in range(patch_x):
-            for j in range(patch_y):
-                save_patch(path, tensor_image[:, j*PATCH_SIZE[HEIGHT]:j*PATCH_SIZE[HEIGHT]+PATCH_SIZE[HEIGHT], i*PATCH_SIZE[WIDTH]:i*PATCH_SIZE[WIDTH]+PATCH_SIZE[WIDTH]], progress)
-                progress += 1
-
-    return progress
-
-def patches_to_PIL(patches: torch.Tensor):
-    TensorToPIL = transforms.ToPILImage()
-    images = []
-    for patch in patches:
-        images.append(TensorToPIL(patch))
-    return images
-
-def make_directory(video_path: Path) -> Path:
-    res_string = "{}_{}".format(PATCH_SIZE[0], PATCH_SIZE[1])
-    data_dir = PATCHES_DIR / res_string
-    if(not os.path.exists(data_dir)):
-        os.mkdir(data_dir)
-
-    video_name = os.path.basename(video_path)
-    video_name = os.path.splitext(video_name)[0]
-    full_dir = data_dir / video_name
-    if(not os.path.exists(full_dir)):
-        os.mkdir(full_dir)
+def make_directory(video_path: Path, name) -> Path:
+    full_path = video_path / name
     
-    return full_dir
+    return full_path
     
 
-def save_patch(target_path: Path, patch: torch.Tensor, progress):
+def save_image(target_path: Path, frame, progress):
+    print
+    if(not os.path.exists(target_path)):
+        os.makedirs(target_path)
+
     TensorToPIL = transforms.ToPILImage()
-    name = "{}.jpg".format(progress)
+    name = "{}.png".format(progress)
     id_path = target_path / name
 
-    Image.Image.save(TensorToPIL(patch), id_path)
-
-    return
+    Image.Image.save(TensorToPIL(frame), id_path)
 
 
-def video_to_patches(video_path: Path) -> None:
-    NumpyToTensor = transforms.ToTensor()
-    progress = 0
+def video_to_images(name) -> None:
     i = 0
 
-    path = make_directory(video_path)
-    print("Building in path:", path)
+    frame_path = VIDEO_PATH / "{}.mp4".format(name)
+    image_path = IMAGE_PATH / name
+    
+    print("Building from path:", frame_path)
+    print("Building in path:", image_path)
     
     cur_time = time()
 
-    for frame in imageio.imiter(video_path):
+    for frame in imageio.imiter(frame_path):
         if(i % 100 == 0):
             print("FPS:", 100/(time()-cur_time))
             cur_time = time()
             print("Frame:", i)
 
+        save_image(image_path, frame, i)
         i += 1
-        
-        tensor_frame = NumpyToTensor(frame)
-
-        progress = to_patches(path, tensor_image=tensor_frame, progress=progress)
 
 if __name__ == '__main__':
-    video_to_patches(Path("./data/movies/shooters.mp4"))
+    video_to_images("nuclearFamily")

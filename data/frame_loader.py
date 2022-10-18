@@ -1,22 +1,15 @@
-from unittest.mock import patch
 from torch.utils.data import Dataset
-from PIL import Image
 from torchvision import transforms
 
 import numpy as np
 
 from pathlib import Path
-import os
-import os.path
-import time
-import sys
-import random
 import imageio
 import cv2
 
 BLOCK_SIZE = 100
 
-class PatchSet(Dataset):
+class FrameSet(Dataset):
     def __init__(self, movie_path):
         self.toTensor = transforms.ToTensor()
 
