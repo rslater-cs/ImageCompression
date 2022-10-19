@@ -1,11 +1,11 @@
 from bz2 import compress
 from models.SwinCompression import Encoder, Decoder
-from data.patch_loader import PatchSet
+from data.frame_loader import PatchSet
 import torch
 import torch.optim as optim
 import torch.nn as nn
 import torch.nn.functional as F
-from data.patch_loader import PatchSet
+from data.frame_loader import PatchSet
 from data.model_saver import save_model
 from torch.utils.data import DataLoader
 from models.ConvCompression import ConvCompression

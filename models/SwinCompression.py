@@ -183,6 +183,8 @@ class FullSwinCompressor(nn.Module):
         ):
         super().__init__()
 
+        self.network_type = "SwinCompression"
+
         self.encoder = Encoder(
             embed_dim=embed_dim, 
             output_dim=transfer_dim, 

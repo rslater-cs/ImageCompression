@@ -82,6 +82,8 @@ class FullConvConvCompressor(nn.Module):
     def __init__(self, embed_dim: int, transfer_dim: int, reduction_layers: int):
         super().__init__()
 
+        self.network_type = "ConvCompression"
+
         self.encoder = Encoder(
             embed_dim=embed_dim, 
             transfer_dim=transfer_dim, 
