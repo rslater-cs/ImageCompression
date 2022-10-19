@@ -12,13 +12,15 @@ BLOCK_SIZE = 100
 
 class ImageSet():
     def __init__(self, image_folder):
+        self.shufflemode = True
+        
         toTensor = transforms.ToTensor()
 
         print("Loading Started")
 
         folder_path = Path(image_folder)
 
-        self.images = ImageFolder(folder_path, transform=toTensor)
+        self.trainset = ImageFolder(folder_path, transform=toTensor)
 
         print("Total Samples", len(self.images))
 

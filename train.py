@@ -5,7 +5,7 @@ from torch.utils.data import DataLoader
 
 from tqdm import tqdm
 
-from data_loading import frame_loader, imageframe_loader
+from data_loading import frame_loader, imageframe_loader, cifar_10
 from models import ConvCompression, SwinCompression
 from model_analyser import model_requirements, model_saver
 
@@ -17,21 +17,24 @@ device = "cuda:0" if cuda.is_available() else "cpu"
 
 print("Using", device)
 
-compressor = SwinCompression.FullSwinCompressor(embed_dim=16, transfer_dim=1, patch_size=[2,2], depths=[2,2,2,4,6,2], num_heads=[2,2,2,2,2,2], window_size=[2,2])
-# compressor = ConvCompression.FullConvConvCompressor(32, 1, 6)
+compressor = SwinCompression.FullSwinCompressor(embed_dim=16, transfer_dim=1, patch_size=[2,2], depths=[2,2,4,6], num_heads=[2,2,2,2], window_size=[2,2])
+# compressor = ConvCompression.FullConvConvCompressor(32, 1, 4)
 compressor = compressor.to(device)
 param_count = model_requirements.get_parameters(compressor)
+print(compressor)
 print("TOTAL PARAMETERS:", f'{param_count:,}')
 
 criterion = MSELoss()
 optimizer = optim.Adam(compressor.parameters(), lr=1e-5)
 
-patch_dataset = imageframe_loader.ImageFolder(MOVIE_PATH)
-patch_loader = DataLoader(patch_dataset.images, batch_size=BATCH_SIZE, shuffle=True)
+# dataset = imageframe_loader.ImageSet(MOVIE_PATH)
+# dataset = frame_loader.FrameSet(MOVIE_PATH)
+dataset = cifar_10.CIFAR()
+data_loader = DataLoader(dataset.trainset, batch_size=BATCH_SIZE, shuffle=dataset.shufflemode)
 
 for epoch in range(EPOCHS):
-    with tqdm(patch_loader, unit="batch") as tepoch:
-        for inputs in tepoch:
+    with tqdm(data_loader, unit="batch") as tepoch:
+        for inputs, _ in tepoch:
             tepoch.set_description(f"Epoch {epoch}")
 
             inputs = inputs.to(device)

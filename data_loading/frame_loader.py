@@ -11,6 +11,8 @@ BLOCK_SIZE = 100
 
 class FrameSet(Dataset):
     def __init__(self, movie_path):
+        self.shufflemode = False
+
         self.toTensor = transforms.ToTensor()
 
         print("Loading Started")
