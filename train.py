@@ -8,16 +8,19 @@ from tqdm import tqdm
 from data_loading import frame_loader, imageframe_loader, cifar_10
 from models import ConvCompression, SwinCompression
 from model_analyser import model_requirements, model_saver
+import ssl
 
-EPOCHS = 5
-BATCH_SIZE = 1
+ssl._create_default_https_context = ssl._create_unverified_context
+
+EPOCHS = 20
+BATCH_SIZE = 256
 MOVIE_PATH = "C:\\Users\\ryans\\OneDrive - University of Surrey\\Documents\\Computer Science\\Modules\\Year3\\FYP\\MoviesDataset\\DVU_Challenge\\Movies\\1024_576_IMS\\nuclearFamily"
 
 device = "cuda:0" if cuda.is_available() else "cpu"
 
 print("Using", device)
 
-compressor = SwinCompression.FullSwinCompressor(embed_dim=16, transfer_dim=1, patch_size=[2,2], depths=[2,2,4,6], num_heads=[2,2,2,2], window_size=[2,2])
+compressor = SwinCompression.FullSwinCompressor(embed_dim=48, transfer_dim=1, patch_size=[2,2], depths=[2,2,4,6], num_heads=[2,2,2,2], window_size=[2,2])
 # compressor = ConvCompression.FullConvConvCompressor(32, 1, 4)
 compressor = compressor.to(device)
 param_count = model_requirements.get_parameters(compressor)
