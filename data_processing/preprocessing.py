@@ -8,11 +8,14 @@ from typing import List
 import os
 import os.path
 from time import time
+import cv2
 
 PatchSequence = List[Image.Image]
 
+IMAGE_RES = (512, 288)
+
 VIDEO_PATH = Path("C:\\Users\\ryans\\OneDrive - University of Surrey\\Documents\\Computer Science\\Modules\\Year3\\FYP\\MoviesDataset\\DVU_Challenge\\Movies\\1024_576")
-IMAGE_PATH = Path("C:\\Users\\ryans\\OneDrive - University of Surrey\\Documents\\Computer Science\\Modules\\Year3\\FYP\\MoviesDataset\\DVU_Challenge\\Movies\\1024_576_IMS")
+IMAGE_PATH = Path("E:\\Programming\\Datasets\\MoviesDataset\\DVU_Challenge\\Movies\\{}_{}_IMS".format(IMAGE_RES[0], IMAGE_RES[1]))
 
 def make_directory(video_path: Path, name) -> Path:
     full_path = video_path / name
@@ -26,7 +29,7 @@ def save_image(target_path: Path, frame, progress):
         os.makedirs(target_path)
 
     TensorToPIL = transforms.ToPILImage()
-    name = "{}.png".format(progress)
+    name = "{}.jpg".format(progress)
     id_path = target_path / name
 
     Image.Image.save(TensorToPIL(frame), id_path)
@@ -48,6 +51,8 @@ def video_to_images(name) -> None:
             print("FPS:", 100/(time()-cur_time))
             cur_time = time()
             print("Frame:", i)
+
+        frame = cv2.resize(frame, dsize=(512, 288), interpolation=cv2.INTER_AREA)
 
         save_image(image_path, frame, i)
         i += 1

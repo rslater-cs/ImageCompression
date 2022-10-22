@@ -22,6 +22,6 @@ class ImageSet():
 
         self.trainset = ImageFolder(folder_path, transform=toTensor)
 
-        print("Total Samples", len(self.images))
+        print("Total Samples", len(self.trainset))
 
         print("Loading Complete")

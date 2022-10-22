@@ -5,7 +5,9 @@ import cv2
 import random
 from PIL import Image
 import numpy as np
-from data.postprocessing import fix_bounds
+from data_processing import postprocessing
+from data_loading import cifar_10
+from torch.utils.data import DataLoader
 
 MOVIE_PATH = "C:\\Users\\ryans\\OneDrive - University of Surrey\\Documents\\Computer Science\\Modules\\Year3\\FYP\\MoviesDataset\\DVU_Challenge\\Movies\\1024_576\\nuclearFamily.mp4"
 
@@ -47,13 +49,14 @@ def get_random_frames(path):
 
     return frames
 
-encoder = torch.load(".\\saved_models\\SwinCompression_0\\SwinCompression_encoder.pth").to(device)
+encoder = torch.load(".\\saved_models\\SwinCompression_1\\SwinCompression_encoder.pth").to(device)
 encoder.eval()
 
-decoder = torch.load(".\\saved_models\\SwinCompression_0\\SwinCompression_decoder.pth").to(device)
+decoder = torch.load(".\\saved_models\\SwinCompression_1\\SwinCompression_decoder.pth").to(device)
 decoder.eval()
 
-frame = get_random_frames(MOVIE_PATH)
+loader = DataLoader(cifar_10.CIFAR().trainset, shuffle=True)
+frame, _ = next(iter(loader))
 
 print(frame.shape)
 
@@ -69,7 +72,7 @@ output = decoder(compressed)
 
 print(output.shape)
 
-output_frame = fix_bounds(output)
+output_frame = postprocessing.fix_bounds(output)
 original_frame = ToImage(frame[0])
 image_output = ToImage(output_frame[0])
 

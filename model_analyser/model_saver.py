@@ -1,10 +1,10 @@
 import os
+from pathlib import Path
 import torch
+import shutil
 
-def save_model(encoder, decoder, type):
+def get_path(type):
     root = ".\\saved_models\\"
-    encoder_name = "{}_encoder".format(type)
-    decoder_name = "{}_decoder".format(type)
     networks = [(os.path.join(root, name), int(name.split("_")[1]))\
         for name in os.listdir(".\\saved_models\\") if (os.path.isdir(os.path.join(root, name)) and type in name)]
 
@@ -22,10 +22,24 @@ def save_model(encoder, decoder, type):
     if(not os.path.exists(path)):
         os.mkdir(path)
 
-    encoder_path = os.path.join(path, "{}{}".format(encoder_name, ".pth"))
-    decoder_path = os.path.join(path, "{}{}".format(decoder_name, ".pth"))
+    return Path(path)
 
-    torch.save(encoder, encoder_path)
-    torch.save(decoder, decoder_path)
+
+def save_model(model, path: Path, in_progress=False):
+    if(in_progress):
+        encoder_path = path / "encoder_progress.pt"
+        decoder_path = path / "decoder_progress.pt"
+    else:
+        encoder_path = path / "encoder.pt"
+        decoder_path = path / "decoder.pt"
+
+    code_copy_path = Path(".\\models") / "{}.py".format(model.network_type)
+    code_paste_path = path / "{}.py".format(model.network_type)
+
+    if(not os.path.exists(code_paste_path)):
+        shutil.copyfile(code_copy_path, code_paste_path)
+
+    torch.save(model.encoder.state_dict(), encoder_path)
+    torch.save(model.decoder.state_dict(), decoder_path)
 
     return path
