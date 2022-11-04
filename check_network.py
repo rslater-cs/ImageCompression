@@ -1,3 +1,4 @@
+from distutils.sysconfig import customize_compiler
 import torch
 from torchvision import transforms
 import imageio
@@ -6,10 +7,14 @@ import random
 from PIL import Image
 import numpy as np
 from data_processing import postprocessing
-from data_loading import cifar_10
+from data_loading import imagenet
 from torch.utils.data import DataLoader
+from saved_models.SwinCompression_4 import SwinCompression
+from pathlib import Path
 
-MOVIE_PATH = "C:\\Users\\ryans\\OneDrive - University of Surrey\\Documents\\Computer Science\\Modules\\Year3\\FYP\\MoviesDataset\\DVU_Challenge\\Movies\\1024_576\\nuclearFamily.mp4"
+# MOVIE_PATH = "C:\\Users\\ryans\\OneDrive - University of Surrey\\Documents\\Computer Science\\Modules\\Year3\\FYP\\MoviesDataset\\DVU_Challenge\\Movies\\1024_576\\nuclearFamily.mp4"
+
+ROOT_PATH = Path(".\\saved_models\\SwinCompression_4")
 
 PATCH_SIZE = (1280, 720)
 FRAME_SIZE = (1280, 720)
@@ -49,13 +54,13 @@ def get_random_frames(path):
 
     return frames
 
-encoder = torch.load(".\\saved_models\\SwinCompression_1\\SwinCompression_encoder.pth").to(device)
-encoder.eval()
+compressor = SwinCompression.FullSwinCompressor(embed_dim=16, transfer_dim=16, patch_size=[2,2], depths=[2,2,2,6,2], num_heads=[2,2,2,2,2], window_size=[2,2])
+compressor.encoder.load_state_dict(torch.load(ROOT_PATH / "encoder.pt"))
+compressor.decoder.load_state_dict(torch.load(ROOT_PATH / "decoder.pt"))
+compressor = compressor.to(device)
+compressor.eval()
 
-decoder = torch.load(".\\saved_models\\SwinCompression_1\\SwinCompression_decoder.pth").to(device)
-decoder.eval()
-
-loader = DataLoader(cifar_10.CIFAR().trainset, shuffle=True)
+loader = DataLoader(imagenet.IN(portion=1).trainset, shuffle=True)
 frame, _ = next(iter(loader))
 
 print(frame.shape)
@@ -64,11 +69,11 @@ frame = frame.to(device)
 
 print(frame.shape)
 
-compressed = encoder(frame)
+compressed = compressor.encoder(frame)
 
 print(compressed.shape)
 
-output = decoder(compressed)
+output = compressor.decoder(compressed)
 
 print(output.shape)
 
