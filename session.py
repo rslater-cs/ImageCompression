@@ -33,7 +33,7 @@ if __name__ == "__main__":
     args = Args()
 
     if(args.model_type == "swin"):
-        compressor = SwinCompression.FullSwinCompressor(embed_dim=48, transfer_dim=16, patch_size=[2,2], depths=[4,4,6,4], num_heads=[4,4,4,4,4], window_size=[4,4])
+        compressor = SwinCompression.FullSwinCompressor(embed_dim=48, transfer_dim=16, patch_size=[2,2], depths=[4,6,4], num_heads=[4,4,4], window_size=[4,4], dropout=0.5)
     elif(args.model_type == "conv"):
         compressor = ConvCompression.FullConvConvCompressor(embed_dim=128, transfer_dim=16, reduction_layers=4)
 
