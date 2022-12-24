@@ -4,9 +4,9 @@ import torch
 import shutil
 
 def get_path(type):
-    root = ".\\saved_models\\"
+    root = "./saved_models/"
     networks = [(os.path.join(root, name), int(name.split("_")[1]))\
-        for name in os.listdir(".\\saved_models\\") if (os.path.isdir(os.path.join(root, name)) and type in name)]
+        for name in os.listdir("./saved_models/") if (os.path.isdir(os.path.join(root, name)) and type in name)]
 
     networks.sort(key= lambda x: x[1])
 
@@ -33,7 +33,7 @@ def save_model(model, path: Path, in_progress=False):
         encoder_path = path / "encoder.pt"
         decoder_path = path / "decoder.pt"
 
-    code_copy_path = Path(".\\models") / "{}.py".format(model.network_type)
+    code_copy_path = Path("./models") / "{}.py".format(model.network_type)
     code_paste_path = path / "{}.py".format(model.network_type)
 
     if(not os.path.exists(code_paste_path)):

@@ -10,8 +10,8 @@ RUN wget \
     && rm -f Miniconda3-latest-Linux-x86_64.sh 
 RUN conda --version
 
-COPY ml_compression_enviroment.yml .
-RUN conda env create -f ml_compression_enviroment.yml
+COPY ubuntu_env.yml .
+RUN conda env create -f ubuntu_env.yml
 
 RUN conda activate ml_compression
 

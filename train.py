@@ -26,7 +26,7 @@ def start_session(model, epochs, batch_size, subset):
     param_count = model_requirements.get_parameters(model)
     print("TOTAL PARAMETERS:", f'{param_count:,}')
 
-    time.sleep(2)
+    time.sleep(1)
 
     criterion = MSELoss()
     optimizer = optim.Adam(model.parameters(), lr=1e-5)
