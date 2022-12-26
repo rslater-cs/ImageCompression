@@ -6,7 +6,7 @@ from torch.utils.data import DataLoader
 
 from tqdm import tqdm
 
-from data_loading import imagenet
+from data_loading import imagenet, cifar_10
 from model_analyser import model_requirements, model_saver
 
 import time
@@ -31,7 +31,8 @@ def start_session(model, epochs, batch_size, subset):
     criterion = MSELoss()
     optimizer = optim.Adam(model.parameters(), lr=1e-5)
 
-    dataset = imagenet.IN(portion=subset)
+    # dataset = imagenet.IN(portion=subset)
+    dataset = cifar_10.CIFAR()
     data_loader = DataLoader(dataset.trainset, batch_size=batch_size, shuffle=dataset.shufflemode)
     data_length = len(dataset.trainset)
 

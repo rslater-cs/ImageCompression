@@ -3,40 +3,30 @@
 # Replace with specific OS
 FROM continuumio/miniconda3
 
-ENV PATH="/root/miniconda3/bin:${PATH}"
-ARG PATH="/root/miniconda3/bin:${PATH}"
-
-RUN apt-get update
-
-RUN apt-get install -y wget && rm -rf /var/lib/apt/lists/*
-
-RUN wget \
-    https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh \
-    && mkdir /root/.conda \
-    && bash Miniconda3-latest-Linux-x86_64.sh -b \
-    && rm -f Miniconda3-latest-Linux-x86_64.sh 
+WORKDIR /app
 
 RUN conda --version
 
 COPY ubuntu_env.yml .
-# RUN conda env create -f ubuntu_env.yml
+RUN conda env create -f ubuntu_env.yml
 
-# RUN conda init ml_compression
+RUN echo "CHECKPOINT"
 
-# RUN conda activate ml_compression
+SHELL ["conda", "run", "-n", "ml_compression", "/bin/bash", "-c"]
 
-RUN cat ~/.bashrc && \
-    conda init bash && \
-    cat ~/.bashrc && \
-    conda env create -f ubuntu_env.yml && \
-    conda activate ml_compression
+RUN echo "Make sure enviroment is installed:"
+RUN python -c "import torch"
 
-COPY data_loading .
-COPY data_processing .
-COPY model_analyser .
-COPY models .
+RUN mkdir ./saved_models
+
+COPY data ./data
+
+COPY data_loading ./data_loading
+COPY data_processing ./data_processing
+COPY model_analyser ./model_analyser
+COPY models ./models
 COPY session.py .
 COPY train.py .
 
-ENTRYPOINT ["python", "session.py"]
+ENTRYPOINT ["conda", "run", "--no-capture-output", "-n", "ml_compression", "python", "session.py"]
 # --model swin --epochs 5 --batch 128
