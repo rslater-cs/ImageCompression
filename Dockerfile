@@ -29,4 +29,6 @@ COPY session.py .
 COPY train.py .
 
 ENTRYPOINT ["conda", "run", "--no-capture-output", "-n", "ml_compression", "python", "session.py"]
-# --model swin --epochs 5 --batch 128
+
+# To run do 
+# docker run -it --rm --gpus all <docker_name> --model swin --epochs <epochs> --batch <batch_size>
