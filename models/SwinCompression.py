@@ -5,7 +5,44 @@ from pathlib import Path
 import torch.nn as nn
 import torch
 from torchvision.models.swin_transformer import SwinTransformer, ShiftedWindowAttention, SwinTransformerBlock, Permute
+from torchvision.models import vision_transformer
 from time import time
+
+class ViTBlock(nn.Module):
+    def __init__(self,
+        num_heads: int,
+        num_features: int,
+        mlp_ratio: float = 4.0,
+        dropout: float = 0.0
+        ):
+        super().__init__()
+
+        self.block = vision_transformer.EncoderBlock(num_heads=num_heads,
+            hidden_dim=num_features, 
+            mlp_dim=int(mlp_ratio*num_features), 
+            dropout=dropout, 
+            attention_dropout=dropout
+            )
+
+    def forward(self, x):
+        # input: B C H W
+
+        # x: B H W C
+        x = torch.permute(x, (0, 2, 3, 1))
+        B, Hx, Wx, C = x.shape
+
+        # B L C
+        x = x.reshape(B, Hx*Wx, C)
+        x = self.block(x)
+
+        # B H W C
+        x = x.reshape(B, Hx, Wx, C)
+
+        # B C H W
+        x = torch.permute(x, (0, 3, 1, 2))
+
+        return x
+
 
 # The encoder utilises a normal Swin Transformer with the classification
 # layers removed
@@ -30,10 +67,16 @@ class Encoder(SwinTransformer):
             window_size, mlp_ratio, dropout, attention_dropout, 
             stochastic_depth_prob, num_classes, norm_layer, block)
         num_features = embed_dim * 2 ** (len(depths) - 1)
+
         self.out_conv = nn.Conv2d(num_features, output_dim, kernel_size=1, stride=1)
 
     def forward(self, x):
+        #input size: B, C, H, W
+
+        # x: B, H, W, C
         x = self.features(x)
+
+        # x: B, C, H, W
         x = torch.permute(x, (0, 3, 1, 2))
         x = self.out_conv(x)
         return x
@@ -199,6 +242,8 @@ class FullSwinCompressor(nn.Module):
             norm_layer=norm_layer,
             block=block
         )
+
+        self.vit_block = ViTBlock(num_heads=num_heads[-1], num_features=transfer_dim, mlp_ratio=mlp_ratio, dropout=dropout)
         
         output_dim = embed_dim * 2 ** (len(depths)-1)
 
@@ -218,6 +263,7 @@ class FullSwinCompressor(nn.Module):
 
     def forward(self, x):
         x = self.encoder(x)
+        x = self.vit_block(x)
         x = self.decoder(x)
 
         return x
