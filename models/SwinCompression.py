@@ -8,6 +8,29 @@ from torchvision.models.swin_transformer import SwinTransformer, ShiftedWindowAt
 from torchvision.models import vision_transformer
 from time import time
 
+class Quantise8(nn.Module):
+    def __init__(self):
+        super().__init__()
+
+    def forward(self, x: torch.Tensor):
+        min_x = torch.min(x, dim=0).values
+        max_x = torch.max(x, dim=0).values
+
+        qx = 255*((x-min_x)/(max_x-min_x))
+        qx = qx.type(torch.uint8)
+
+        return qx, min_x, max_x
+
+class DeQuantise8(nn.Module):
+    def __init__(self):
+        super().__init__()
+
+    def forward(self, x, min_x, max_x):
+        dx = min_x+(max_x-min_x)*(x/255.0)
+
+        return dx
+
+
 class ViTBlock(nn.Module):
     def __init__(self,
         num_heads: int,
@@ -243,6 +266,9 @@ class FullSwinCompressor(nn.Module):
             block=block
         )
 
+        self.quantise = Quantise8()
+        self.dequantise = DeQuantise8()
+
         self.vit_block = ViTBlock(num_heads=num_heads[-1], num_features=transfer_dim, mlp_ratio=mlp_ratio, dropout=dropout)
         
         output_dim = embed_dim * 2 ** (len(depths)-1)
@@ -263,6 +289,14 @@ class FullSwinCompressor(nn.Module):
 
     def forward(self, x):
         x = self.encoder(x)
+
+        B, C, H, W = x.shape
+        x = torch.permute(x.reshape(B, -1), (1,0))
+        x, minx, maxx = self.quantise(x)
+        # THIS IS THE PLACE TO APPLY AE IN PRODUCTION
+        x = self.dequantise(x, minx, maxx)
+        x = torch.permute(x, (1,0)).reshape(B, C, H, W)
+
         x = self.vit_block(x)
         x = self.decoder(x)
 
