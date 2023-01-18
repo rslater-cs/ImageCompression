@@ -16,7 +16,7 @@ def pSNR(mse):
     
     return psnr
 
-def start_session(model, epochs, batch_size, subset):
+def start_session(model, epochs, batch_size):
 
     device = "cuda:0" if cuda.is_available() else "cpu"
 
@@ -32,7 +32,7 @@ def start_session(model, epochs, batch_size, subset):
     optimizer = optim.Adam(model.parameters(), lr=1e-5)
 
     # dataset = imagenet.IN(portion=subset)
-    dataset = cifar_10.CIFAR()
+    dataset = imagenet.IN()
     data_loader = DataLoader(dataset.trainset, batch_size=batch_size, shuffle=dataset.shufflemode)
     data_length = len(dataset.trainset)
 
