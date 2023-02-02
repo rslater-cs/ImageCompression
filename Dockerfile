@@ -7,7 +7,7 @@ WORKDIR /app
 
 RUN conda --version
 
-COPY ubuntu_env.yml .
+COPY enviroment/ubuntu_env.yml .
 RUN conda env create -f ubuntu_env.yml
 
 RUN echo "CHECKPOINT"
