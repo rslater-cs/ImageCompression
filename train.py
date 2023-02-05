@@ -29,7 +29,7 @@ def start_session(model, epochs, batch_size):
     time.sleep(1)
 
     criterion = MSELoss()
-    optimizer = optim.Adam(model.parameters(), lr=1e-5)
+    optimizer = optim.Adam(model.parameters(), lr=1e-4)
 
     # dataset = imagenet.IN(portion=subset)
     dataset = imagenet.IN()

@@ -22,7 +22,7 @@ class Args():
 if __name__ == "__main__":
     args = Args().args
 
-    depths = [4]*args['depth']
+    depths = [2]*args['depth']
     depths[-2] = 6
 
     heads = [4]*args['depth']

@@ -1,0 +1,72 @@
+####################
+#
+# Example Job for HTCondor
+#
+####################
+
+#---------------------------------------------
+# Name your batch so it's easy to distinguish in the q.
+JobBatchName = "CompressionML"
+
+# --------------------------------------------
+# Executable
+executable    = $ENV(PWD)/miniconda3/envs/ml_compression/bin/python
+
+# ---------------------------------------------------
+# Universe (vanilla, docker)
+universe     = docker
+docker_image = nvidia/cuda:10.1-cudnn7-runtime-ubuntu16.04
+
+# -------------------------------------------------
+# Event, out and error logs
+log    = c$(cluster).p$(process).log
+output = c$(cluster).p$(process).out
+error  = c$(cluster).p$(process).error
+
+# -----------------------------------
+# File Transfer, Input, Output
+should_transfer_files = YES
+
+# Mount the project spaces containing the Anaconda environments and the code
+environment = "mount=$ENV(PWD)"
+
+# -------------------------------------
+# Requirements for the Job (see NvidiaDocker/Example09)
+requirements = (CUDAGlobalMemoryMb > 8000) && (CUDAGlobalMemoryMb <  17000) && \
+#              (HasStornext) && \
+               (CUDACapability > 2.0)
+
+# --------------------------------------
+# Resources
+request_GPUs   = 1
+# this needs to be specified for the AI@Surrey cluster if requesting a GPU
++GPUMem          = 10000  
+request_CPUs   = 1
+request_memory = 2G
+
+#This job will complete in less than 1 hour
++JobRunTime = 1
+
+#This job can checkpoint
++CanCheckpoint = true
+
+# ------------------------------------
+# Request for guaruanteed run time. 0 means job is happy to checkpoint and move at any time.
+# This lets Condor remove our job ASAP if a machine needs rebooting. Useful when we can checkpoint and restore
+# Measured in seconds, so it can be changed to match the time it takes for an epoch to run
+MaxJobRetirementTime = 0
+
+# -----------------------------------
+# Queue commands. We can use variables and flags to launch our command with multiple options (as you would from the command line)
+arguments = $(script) --epochs 50 --batch 8 --save_dir $(model_dir) --embed $(embed_dim) --transfer $(transfer_dim) --window $(window_size) --depth $(depth)
+
+# NOTE: Variable names can't contain dashes!
+script = $ENV(PWD)/mnist_pytorch.py
+model_dir = $ENV(PWD)/models
+
+embed_dim = 48
+transfer_dim = 16
+window_size = 4
+depth = 3
+
+queue 1

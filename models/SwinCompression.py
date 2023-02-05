@@ -13,6 +13,8 @@ class Quantise8(nn.Module):
         super().__init__()
 
     def forward(self, x: torch.Tensor):
+        x = x.flatten(start_dim=1, end_dim=-1)
+        x = torch.permute(x, (1,0))
         min_x = torch.min(x, dim=0).values
         max_x = torch.max(x, dim=0).values
 
@@ -25,10 +27,13 @@ class DeQuantise8(nn.Module):
     def __init__(self):
         super().__init__()
 
-    def forward(self, x, min_x, max_x):
-        dx = min_x+(max_x-min_x)*(x/255.0)
+    def forward(self, x, min_x, max_x, shape):
+        x = min_x+(max_x-min_x)*(x/255.0)
 
-        return dx
+        x = torch.permute(x, (1,0))
+        x = x.reshape(shape)
+
+        return x
 
 
 class ViTBlock(nn.Module):
@@ -93,6 +98,8 @@ class Encoder(SwinTransformer):
 
         self.out_conv = nn.Conv2d(num_features, output_dim, kernel_size=1, stride=1)
 
+        self.quantise = Quantise8()
+
     def forward(self, x):
         #input size: B, C, H, W
 
@@ -102,7 +109,11 @@ class Encoder(SwinTransformer):
         # x: B, C, H, W
         x = torch.permute(x, (0, 3, 1, 2))
         x = self.out_conv(x)
-        return x
+
+        # x: C*H*W B
+        x, minx, maxx = self.quantise(x)
+
+        return x, minx, maxx
 
 # While the normal Swin Tranformer merges patches, the decompression requires 
 # the patches be split to reach the original resolution of the input image
@@ -170,6 +181,10 @@ class Decoder(nn.Module):
         if norm_layer is None:
             norm_layer = partial(nn.LayerNorm, eps=1e-5)
 
+        self.dequantise = DeQuantise8()
+
+        self.vit_block = ViTBlock(num_heads=num_heads[-1], num_features=input_embed_dim, mlp_ratio=mlp_ratio, dropout=dropout)
+
         layers: List[nn.Module] = []
 
         layers.append(
@@ -226,9 +241,18 @@ class Decoder(nn.Module):
                     nn.init.zeros_(m.bias)
         
 
-    def forward(self, x):
+    def forward(self, x, minx, maxx, shape):
+        # x: B C H W
+        x = self.dequantise(x, minx, maxx, shape)
+
+        # x: B C H W
+        x = self.vit_block(x)
+
+        # x: B H W C
         x = self.features(x)
-        x = torch.permute(x, (0, 3, 1, 2))
+
+        # x: B C H W
+        x = torch.permute(x, (0, 3, 1, 2))        
         x = self.head(x)
         return x
 
@@ -250,6 +274,8 @@ class FullSwinCompressor(nn.Module):
         super().__init__()
 
         self.network_type = "SwinCompression"
+        self.transfer_dim = transfer_dim
+        self.depth = len(depths)
 
         self.encoder = Encoder(
             embed_dim=embed_dim, 
@@ -288,17 +314,10 @@ class FullSwinCompressor(nn.Module):
         )
 
     def forward(self, x):
-        x = self.encoder(x)
-
-        B, C, H, W = x.shape
-        x = torch.permute(x.reshape(B, -1), (1,0))
-        x, minx, maxx = self.quantise(x)
-        # THIS IS THE PLACE TO APPLY AE IN PRODUCTION
-        x = self.dequantise(x, minx, maxx)
-        x = torch.permute(x, (1,0)).reshape(B, C, H, W)
-
-        x = self.vit_block(x)
-        x = self.decoder(x)
+        hw_reduction = 2 ** self.depth
+        shape = (x.shape[0], self.transfer_dim, x.shape[2]//hw_reduction, x.shape[3]//hw_reduction)
+        x, minx, maxx = self.encoder(x)
+        x = self.decoder(x, minx, maxx, shape)
 
         return x
 
