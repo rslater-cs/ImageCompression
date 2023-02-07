@@ -62,7 +62,7 @@ arguments = $(script) --epochs 50 --batch 8 --save_dir $(model_dir) --imagenet $
 
 # NOTE: Variable names can't contain dashes!
 script = $ENV(PWD)/session.py
-model_dir = $ENV(PWD)/models
+model_dir = $ENV(PWD)/saved_models
 imagenet_dir = /vol/vssp/datasets/still/ImageNet
 
 embed_dim = 48
@@ -70,4 +70,4 @@ transfer_dim = 16
 window_size = 4
 depth = 3
 
-queue 1
+queue 
