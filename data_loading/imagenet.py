@@ -1,13 +1,7 @@
-from ctypes import resize
-from tkinter import Image
 from torchvision import transforms
 from torchvision.transforms import ToTensor
 from torchvision.datasets import ImageFolder
 from torch.utils.data import Subset
-import numpy as np
-
-# ImageCompression -> AI -> Python -> Programming
-REL_PATH_TO_DATASETS = "../../../"
 
 class IN():
 
