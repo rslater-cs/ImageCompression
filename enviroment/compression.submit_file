@@ -28,7 +28,7 @@ error  = c$(cluster).p$(process).error
 should_transfer_files = YES
 
 # Mount the project spaces containing the Anaconda environments and the code
-environment = "mount=$ENV(PWD),/vol/vssp/datasets/still/ImageNet,/vol/vssp/SF_datasets/still/ImageNet"
+environment = "mount=$ENV(PWD),/vol/vssp/datasets,/vol/vssp/SF_datasets"
 
 # -------------------------------------
 # Requirements for the Job (see NvidiaDocker/Example09)
