@@ -15,17 +15,18 @@ import time
 
 def device_info(save_dir):
     file = open(save_dir+"/gpu_info.txt", 'w', newline="\n")
-    file.write("Has Cuda:")
+    file.write("Has Cuda:\n")
     file.write(str(cuda.is_available()))
-    file.write("Cuda device count:")
+    file.write("\nCuda device count:\n")
     file.write(str(cuda.device_count()))
-    file.write("Current Device:")
+    file.write("\nCurrent Device:\n")
     file.write(str(cuda.current_device()))
-    file.write("Current Device ID:")
+    file.write("\nCurrent Device ID:\n")
     file.write(str(cuda.get_device_name(cuda.current_device())))
-    file.write("Device Names:")
+    file.write("\nDevice Names:\n")
     for i in range(cuda.device_count()):
         file.write(str(cuda.get_device_name(i)))
+        file.write("\n")
     file.close()
 
 
