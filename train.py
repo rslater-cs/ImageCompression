@@ -35,8 +35,6 @@ def start_session(model, epochs, batch_size, save_dir, data_dir):
     param_count = model_requirements.get_parameters(model)
     print("TOTAL PARAMETERS:", f'{param_count:,}')
 
-    time.sleep(1)
-
     criterion = MSELoss()
     optimizer = optim.Adam(model.parameters(), lr=1e-4)
 
