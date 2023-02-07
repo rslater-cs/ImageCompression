@@ -15,7 +15,14 @@ import time
 
 def device_info(save_dir):
     file = open(save_dir+"/gpu_info.txt", 'w', newline="\n")
-    file.write("Has Cuda:\n")
+    file.write("\nWorking Directory:\n")
+    file.write(os.getcwd())
+    file.write("\nfiles:\n")
+    files = os.listdir(os.getcwd())
+    for item in files:
+        file.write("\n")
+        file.write(str(item))
+    file.write("\nHas Cuda:\n")
     file.write(str(cuda.is_available()))
     file.write("\nCuda device count:\n")
     file.write(str(cuda.device_count()))
