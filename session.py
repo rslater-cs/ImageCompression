@@ -17,7 +17,7 @@ class Args():
     def __init__(self):
         parser = ArgumentParser()
         parser.add_argument("-s", "--save_dir", dest="save_dir", help="The location where models should be saved", type=dir_path)
-        parser.add_argument("-i", "--imagenet", dest="imagenet_dir", help="The location that imagenet is stored", type=dir_path)
+        parser.add_argument("-i", "--imagenet", dest="imagenet_dir", help="The location that imagenet is stored", type=str)
 
         parser.add_argument("-e", "--epochs", dest="epochs", help="Number of epochs to be run", type=int)
         parser.add_argument("-b", "--batch", dest="batch_size", help="Size of data batches", type=int)
