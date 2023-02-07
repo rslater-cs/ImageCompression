@@ -13,6 +13,22 @@ import os
 
 import time
 
+def device_info(save_dir):
+    file = open(save_dir+"/gpu_info.txt", 'w', newline="\n")
+    file.write("Has Cuda:")
+    file.write(str(cuda.is_available()))
+    file.write("Cuda device count:")
+    file.write(str(cuda.device_count()))
+    file.write("Current Device:")
+    file.write(str(cuda.current_device()))
+    file.write("Current Device ID:")
+    file.write(str(cuda.get_device_name(cuda.current_device())))
+    file.write("Device Names:")
+    for i in range(cuda.device_count()):
+        file.write(str(cuda.get_device_name(i)))
+    file.close()
+
+
 def pSNR(mse):
     psnr = 10*log10(1.0**2/mse)
     
@@ -23,11 +39,7 @@ def start_session(model, epochs, batch_size, save_dir, data_dir):
     # does get cuda:0
     device = "cuda:0" if cuda.is_available() else "cpu"
 
-    # file = open(save_dir+"/print.txt", 'w', newline="\n")
-    # file.write(str(cuda.device_count()))
-    # for i in range(cuda.device_count()):
-    #     file.write(str(cuda.get_device_name(i)))
-    # file.close()
+    device_info(save_dir)
 
     print("Using", device)
 
@@ -43,7 +55,7 @@ def start_session(model, epochs, batch_size, save_dir, data_dir):
     data_loader = DataLoader(dataset.trainset, batch_size=batch_size, shuffle=dataset.shufflemode)
     data_length = len(dataset.trainset)
 
-    save_path = model_saver.get_path(type=model.network_type)
+    save_path = model_saver.get_path(save_dir)
 
     for epoch in range(epochs):
         total_psnr = 0.0
