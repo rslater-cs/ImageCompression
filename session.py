@@ -8,7 +8,7 @@ def dir_path(path):
     if os.path.isdir(path):
         return path
     else:
-        raise ArgumentTypeError(f"Path does not exist")
+        raise ArgumentTypeError(f"Path does not exist: {path}")
 
 class Args():
     epochs: int = 20
