@@ -1,7 +1,14 @@
-from argparse import ArgumentParser
+from argparse import ArgumentParser, ArgumentTypeError
+import os
 
 from models import SwinCompression
 from train import start_session
+
+def dir_path(path):
+    if os.path.isdir(path):
+        return path
+    else:
+        raise ArgumentTypeError(f"Path does not exist")
 
 class Args():
     epochs: int = 20
@@ -9,6 +16,9 @@ class Args():
 
     def __init__(self):
         parser = ArgumentParser()
+        parser.add_argument("-s", "--save_dir", dest="save_dir", help="The location where models should be saved", type=dir_path)
+        parser.add_argument("-i", "--imagenet", dest="imagenet_dir", help="The location that imagenet is stored", type=dir_path)
+
         parser.add_argument("-e", "--epochs", dest="epochs", help="Number of epochs to be run", type=int)
         parser.add_argument("-b", "--batch", dest="batch_size", help="Size of data batches", type=int)
 
@@ -37,6 +47,6 @@ if __name__ == "__main__":
         window_size=[args['window_size'], args['window_size']], 
         dropout=0.5)
 
-    start_session(model=compressor, epochs=args['epochs'], batch_size=args['batch_size'])
+    start_session(model=compressor, epochs=args['epochs'], batch_size=args['batch_size'], save_dir=args['save_dir'], data_dir=args['imagenet_dir'])
 
 # --model swin --epochs 5 --batch 128
