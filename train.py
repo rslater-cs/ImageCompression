@@ -20,10 +20,13 @@ def pSNR(mse):
 
 def start_session(model, epochs, batch_size, save_dir, data_dir):
 
+    # does get cuda:0
     device = "cuda:0" if cuda.is_available() else "cpu"
 
-    file = open(save_dir+"/print.txt", 'w')
-    file.write(device)
+    file = open(save_dir+"/print.txt", 'w', newline="\n")
+    file.write(cuda.device_count())
+    for i in range(cuda.device_count()):
+        file.write(cuda.get_device_name(i))
     file.close()
 
     print("Using", device)
