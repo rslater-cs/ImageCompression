@@ -28,7 +28,7 @@ error  = c$(cluster).p$(process).error
 should_transfer_files = YES
 
 # Mount the project spaces containing the Anaconda environments and the code
-environment = "mount=$ENV(PWD),/vol/vssp/datasets,/vol/vssp/SF_datasets"
+environment = "mount=$ENV(PWD),/vol/vssp/datasets/,/vol/vssp/SF_datasets/"
 
 # -------------------------------------
 # Requirements for the Job (see NvidiaDocker/Example09)
@@ -63,7 +63,7 @@ arguments = $(script) --epochs 50 --batch 8 --save_dir $(model_dir) --imagenet $
 # NOTE: Variable names can't contain dashes!
 script = $ENV(PWD)/session.py
 model_dir = $ENV(PWD)/saved_models
-imagenet_dir = 'mount/still/ImageNet'
+imagenet_dir = /vol/vssp/SF_datasets/still/ImageNet
 
 embed_dim = 48
 transfer_dim = 16
