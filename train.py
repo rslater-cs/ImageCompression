@@ -16,7 +16,8 @@ import time
 def device_info(save_dir):
     file = open(save_dir+"/gpu_info.txt", 'w', newline="\n")
     file.write("\nENV Dir:\n")
-    file.write(str(os.listdir("../"+save_dir)))
+    pwd_path = save_dir.replace("/saved_models", '')
+    file.write(str(os.listdir(pwd_path)))
     file.write("\nWorking Directory:\n")
     file.write(os.getcwd())
     file.write("\nfiles:\n")
