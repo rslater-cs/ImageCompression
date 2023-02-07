@@ -9,6 +9,8 @@ from tqdm import tqdm
 from data_loading import imagenet, cifar_10
 from model_analyser import model_requirements, model_saver
 
+import os
+
 import time
 
 def pSNR(mse):
@@ -19,6 +21,10 @@ def pSNR(mse):
 def start_session(model, epochs, batch_size, save_dir, data_dir):
 
     device = "cuda:0" if cuda.is_available() else "cpu"
+
+    file = open(save_dir+"/print.txt", 'w')
+    file.write(device)
+    file.close()
 
     print("Using", device)
 
