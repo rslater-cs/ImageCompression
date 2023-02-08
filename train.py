@@ -15,17 +15,6 @@ import time
 
 def device_info(save_dir, data_dir):
     file = open(save_dir+"/gpu_info.txt", 'w', newline="\n")
-    file.write("\nENV Dir:\n")
-    # pwd_path = save_dir.replace("/saved_models", '')
-    # file.write(str(os.listdir(pwd_path)))
-    file.write(str(os.listdir(data_dir)))
-    file.write("\nWorking Directory:\n")
-    file.write(os.getcwd())
-    file.write("\nfiles:\n")
-    files = os.listdir(os.getcwd())
-    for item in files:
-        file.write("\n")
-        file.write(str(item))
     file.write("\nHas Cuda:\n")
     file.write(str(cuda.is_available()))
     file.write("\nCuda device count:\n")
@@ -40,6 +29,15 @@ def device_info(save_dir, data_dir):
         file.write("\n")
     file.close()
 
+def print_status(save_dir, message):
+    file = open(save_dir+"/output.txt", 'w', newline="\n")
+    file.write(f'{message}')
+    file.close()
+
+def log(save_dir, message):
+    file = open(save_dir+"/output.txt", 'a', newline="\n")
+    file.write(f'\n{message}\n')
+    file.close()
 
 def pSNR(mse):
     psnr = 10*log10(1.0**2/mse)
@@ -71,9 +69,17 @@ def start_session(model, epochs, batch_size, save_dir, data_dir):
 
     for epoch in range(epochs):
         total_psnr = 0.0
+        print_every = 1000
+        current_batch = 0
+        start = time.time()
         with tqdm(data_loader, unit="batch") as tepoch:
             for inputs, _ in tepoch:
                 tepoch.set_description(f"Epoch {epoch}")
+
+                if(current_batch % print_every == 0):
+                    log(save_dir, f'Current Batch: {current_batch},\n       \
+                        Total Batches: {tepoch.total},\n Elapsed Time: {time.time()-start}')
+                    start = time.time()
 
                 inputs = inputs.to(device)
                 outputs = inputs.clone()
@@ -91,10 +97,10 @@ def start_session(model, epochs, batch_size, save_dir, data_dir):
                 
                 total_psnr += psnr
 
-        print("\n\n\t\tpSNR: {}\n\n".format(total_psnr/ceil(data_length/batch_size)))
+        print_status(save_dir, "\n\n\t\tpSNR: {}\n\n".format(total_psnr/ceil(data_length/batch_size)))
 
-        print("Progress saved at:", model_saver.save_model(model, save_path, in_progress=True))
+        log("Progress saved at:", model_saver.save_model(model, save_path, in_progress=True))
 
     saved_path = model_saver.save_model(model, save_path)
 
-    print("Model saved at:", saved_path)
+    log("Model saved at:", saved_path)
