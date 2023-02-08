@@ -75,15 +75,17 @@ def start_session(model, epochs, batch_size, save_dir, data_dir):
 
     for epoch in range(epochs):
         total_psnr = 0.0
-        print_every = 1000
-        current_batch = 0
-        start = time.time()
         with tqdm(data_loader, unit="batch") as tepoch:
+            current_b = 0
+            print_every = 100
+            start = time.time()
             for inputs, _ in tepoch:
                 tepoch.set_description(f"Epoch {epoch}")
 
-                if(current_batch % print_every == 0):
-                    log(save_dir, f'Current Batch: {current_batch},\n       \
+                current_b += 1
+
+                if(time.time()-start == print_every):
+                    log(save_dir, f'Current Batch: {current_b},\n       \
                         Total Batches: {tepoch.total},\n Elapsed Time: {time.time()-start}')
                     start = time.time()
 
