@@ -97,6 +97,8 @@ def start_session(model, epochs, batch_size, save_dir, data_dir):
                 
                 total_psnr += psnr
 
+                current_batch += 1
+
         print_status(save_dir, "\n\n\t\tpSNR: {}\n\n".format(total_psnr/ceil(data_length/batch_size)))
 
         log("Progress saved at:", model_saver.save_model(model, save_path, in_progress=True))
