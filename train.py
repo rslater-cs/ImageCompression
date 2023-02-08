@@ -39,12 +39,18 @@ def log(save_dir, message):
     file.write(f'\n{message}\n')
     file.close()
 
+def reset_log(save_dir):
+    file = open(save_dir+"/output.txt", 'w', newline="\n")
+    file.write(f'')
+    file.close()
+
 def pSNR(mse):
     psnr = 10*log10(1.0**2/mse)
     
     return psnr
 
 def start_session(model, epochs, batch_size, save_dir, data_dir):
+    reset_log(save_dir)
 
     # does get cuda:0
     device = "cuda:0" if cuda.is_available() else "cpu"
