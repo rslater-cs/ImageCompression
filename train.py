@@ -13,11 +13,12 @@ import os
 
 import time
 
-def device_info(save_dir):
+def device_info(save_dir, data_dir):
     file = open(save_dir+"/gpu_info.txt", 'w', newline="\n")
     file.write("\nENV Dir:\n")
-    pwd_path = save_dir.replace("/saved_models", '')
-    file.write(str(os.listdir(pwd_path)))
+    # pwd_path = save_dir.replace("/saved_models", '')
+    # file.write(str(os.listdir(pwd_path)))
+    file.write(str(os.listdir(data_dir)))
     file.write("\nWorking Directory:\n")
     file.write(os.getcwd())
     file.write("\nfiles:\n")
@@ -50,7 +51,7 @@ def start_session(model, epochs, batch_size, save_dir, data_dir):
     # does get cuda:0
     device = "cuda:0" if cuda.is_available() else "cpu"
 
-    device_info(save_dir)
+    device_info(save_dir, data_dir)
 
     print("Using", device)
 
