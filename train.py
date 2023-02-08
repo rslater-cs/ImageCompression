@@ -84,7 +84,7 @@ def start_session(model, epochs, batch_size, save_dir, data_dir):
 
                 current_b += 1
 
-                if(time.time()-start == print_every):
+                if(time.time()-start >= print_every):
                     log(save_dir, f'Current Batch: {current_b},\n       \
                         Total Batches: {tepoch.total},\n Elapsed Time: {time.time()-start}')
                     start = time.time()
