@@ -76,9 +76,9 @@ def start_session(model, epochs, batch_size, save_dir, data_dir):
                 current_b += 1
 
                 if(time.time()-curr >= print_every):
-                    log.print(f'Epoch {epoch}/{epochs}({current_b/tepoch.total}%)')
-                    log.print(f'Elapsed Time: {time.time()-start}')
                     curr = time.time()
+                    log.print(f'Epoch {epoch}/{epochs}({current_b/tepoch.total}%)')
+                    log.print(f'Elapsed Time: {curr-start}')
 
                 inputs = inputs.to(device)
                 outputs = inputs.clone()
