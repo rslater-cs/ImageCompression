@@ -29,7 +29,6 @@ def device_info(save_dir):
 
     for i in range(cuda.device_count()):
         writer.print(str(cuda.get_device_name(i)))
-    writer.close()
 
 def pSNR(mse):
     psnr = 10*log10(1.0**2/mse)
