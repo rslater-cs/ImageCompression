@@ -3,6 +3,7 @@ import os
 
 from models import SwinCompression
 from train import start_session
+from model_analyser.model_saver import make_path
 
 def dir_path(path):
     if os.path.isdir(path):
@@ -16,8 +17,6 @@ class Args():
 
     def __init__(self):
         parser = ArgumentParser()
-        parser.add_argument("-n", "--id", dest="id", help="A number to identify the output of this program", type=int)
-
         parser.add_argument("-s", "--save_dir", dest="save_dir", help="The location where models should be saved", type=dir_path)
         parser.add_argument("-i", "--imagenet", dest="imagenet_dir", help="The location that imagenet is stored", type=dir_path)
 
@@ -49,6 +48,9 @@ if __name__ == "__main__":
         window_size=[args['window_size'], args['window_size']], 
         dropout=0.5)
 
-    start_session(id=args["id"], model=compressor, epochs=args['epochs'], batch_size=args['batch_size'], save_dir=args['save_dir'], data_dir=args['imagenet_dir'])
+    full_save_path = f'{args["save_dir"]}/SwinCompression_e{args["embed_dim"]}_t{args["transfer_dim"]}_w{args["window_size"]}_d{args["depth"]}'
+    make_path(full_save_path)
 
-# --model swin --epochs 5 --batch 128
+    start_session(model=compressor, epochs=args['epochs'], batch_size=args['batch_size'], save_dir=full_save_path, data_dir=args['imagenet_dir'])
+
+# session.py -s ./saved_models -i ./ -e 1 -b 1 -m 12 -t 16 -w 2 -d 3

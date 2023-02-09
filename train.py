@@ -15,8 +15,8 @@ import os
 
 import time
 
-def device_info(save_dir, id):
-    writer = Printer(save_dir, id, name="gpu_info")
+def device_info(save_dir):
+    writer = Printer(save_dir, name="gpu_info")
     writer.print("Has Cuda:")
     writer.print(str(cuda.is_available()))
     writer.print("Cuda Device Count:")
@@ -36,7 +36,7 @@ def pSNR(mse):
     
     return psnr
 
-def start_session(id, model, epochs, batch_size, save_dir, data_dir):
+def start_session(model, epochs, batch_size, save_dir, data_dir):
 
     # does get cuda:0
     device = "cuda:0" if cuda.is_available() else "cpu"
@@ -58,12 +58,10 @@ def start_session(id, model, epochs, batch_size, save_dir, data_dir):
     train_len = len(dataset.trainset)
     valid_len = len(dataset.validset)
 
-    save_path = model_saver.get_path(save_dir)
-
-    log = Printer(save_path, id)
-    status = Status(save_path, id)
-    training_log = MetricLogger(save_path, id, name='train', size=ceil(dataset.trainset/batch_size))
-    valid_log = MetricLogger(save_path, id, name='valid', size=ceil(valid_len/batch_size))
+    log = Printer(save_dir)
+    status = Status(save_dir)
+    training_log = MetricLogger(save_dir, name='train', size=ceil(dataset.trainset/batch_size))
+    valid_log = MetricLogger(save_dir, name='valid', size=ceil(valid_len/batch_size))
 
     for epoch in range(epochs):
         total_psnr = 0.0
@@ -104,8 +102,8 @@ def start_session(id, model, epochs, batch_size, save_dir, data_dir):
         # print_status(save_dir, "\n\n\t\tpSNR: {}\n\n".format(total_psnr/ceil(data_length/batch_size)))
         training_log.put(epoch, total_loss, total_psnr)
 
-        status.print(f'Progress saved at:, {model_saver.save_model(model, save_path, in_progress=True)}')
+        status.print(f'Progress saved at:, {model_saver.save_model(model, save_dir, in_progress=True)}')
 
-    saved_path = model_saver.save_model(model, save_path)
+    saved_path = model_saver.save_model(model, save_dir)
 
     log.print("Final model saved at:", saved_path)

@@ -5,27 +5,11 @@ import shutil
 
 NETWORK_NAME = 'SwinCompression'
 
-def get_path(data_dir):
-    networks = [(os.path.join(data_dir, NETWORK_NAME), int(file.split("_")[1]))\
-        for file in os.listdir(data_dir) if (os.path.isdir(os.path.join(data_dir, NETWORK_NAME)) and NETWORK_NAME in file)]
+def make_path(data_dir):
+    if(not os.path.exists(data_dir)):
+        os.mkdir(data_dir)
 
-    # and type in name
-
-    networks.sort(key= lambda x: x[1])
-
-    if(len(networks) == 0):
-        max_id = -1
-    else:
-        max_id = networks[-1][1]
-
-    network_id = max_id+1
-
-    path = os.path.join(data_dir, "{}_{}".format(NETWORK_NAME, network_id))
-
-    if(not os.path.exists(path)):
-        os.mkdir(path)
-
-    return Path(path)
+    return Path(data_dir)
 
 
 def save_model(model, path: Path, in_progress=False):

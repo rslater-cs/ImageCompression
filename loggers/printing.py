@@ -1,6 +1,6 @@
 class Printer:
-    def __init__(self, path, id, name="output") -> None:
-        self.path = f'{path}/{name}_{id}.txt'
+    def __init__(self, path, name="output") -> None:
+        self.path = f'{path}/{name}.txt'
         file = open(self.path, 'w')
         file.close()
 
@@ -10,8 +10,8 @@ class Printer:
         file.close()
 
 class Status(Printer):
-    def __init__(self, path, id) -> None:
-        super().__init__(path, id, name="status")
+    def __init__(self, path) -> None:
+        super().__init__(path, name="status")
         
     def print(self, message):
         file = open(self.path, 'w')
