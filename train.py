@@ -77,7 +77,7 @@ def start_session(model, epochs, batch_size, save_dir, data_dir):
 
                 if(time.time()-curr >= print_every):
                     curr = time.time()
-                    log.print(f'Epoch {epoch}/{epochs}({current_b/tepoch.total}%)')
+                    log.print(f'Epoch {epoch}/{epochs}({100*current_b/tepoch.total}%)')
                     log.print(f'Elapsed Time: {curr-start}')
 
                 inputs = inputs.to(device)
