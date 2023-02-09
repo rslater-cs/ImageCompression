@@ -3,6 +3,8 @@ from math import ceil
 import torch.optim as optim
 from torch.nn import MSELoss
 from torch.utils.data import DataLoader
+from loggers.printing import Printer, Status
+from loggers.metrics import MetricLogger
 
 from tqdm import tqdm
 
@@ -13,49 +15,33 @@ import os
 
 import time
 
-def device_info(save_dir, data_dir):
-    file = open(save_dir+"/gpu_info.txt", 'w', newline="\n")
-    file.write("\nHas Cuda:\n")
-    file.write(str(cuda.is_available()))
-    file.write("\nCuda device count:\n")
-    file.write(str(cuda.device_count()))
-    file.write("\nCurrent Device:\n")
-    file.write(str(cuda.current_device()))
-    file.write("\nCurrent Device ID:\n")
-    file.write(str(cuda.get_device_name(cuda.current_device())))
-    file.write("\nDevice Names:\n")
+def device_info(save_dir, id):
+    writer = Printer(save_dir, id, name="gpu_info")
+    writer.print("Has Cuda:")
+    writer.print(str(cuda.is_available()))
+    writer.print("Cuda Device Count:")
+    writer.print(str(cuda.device_count()))
+    writer.print("Current Device:")
+    writer.print(str(cuda.current_device()))
+    writer.print("Current Device ID:")
+    writer.print(str(cuda.get_device_name(cuda.current_device())))
+    writer.print("Device Names:")
+
     for i in range(cuda.device_count()):
-        file.write(str(cuda.get_device_name(i)))
-        file.write("\n")
-    file.close()
-
-def print_status(save_dir, message):
-    file = open(save_dir+"/output.txt", 'w', newline="\n")
-    file.write(f'{message}')
-    file.close()
-
-def log(save_dir, message):
-    file = open(save_dir+"/output.txt", 'a', newline="\n")
-    file.write(f'\n{message}\n')
-    file.close()
-
-def reset_log(save_dir):
-    file = open(save_dir+"/output.txt", 'w', newline="\n")
-    file.write(f'')
-    file.close()
+        writer.print(str(cuda.get_device_name(i)))
+    writer.close()
 
 def pSNR(mse):
     psnr = 10*log10(1.0**2/mse)
     
     return psnr
 
-def start_session(model, epochs, batch_size, save_dir, data_dir):
-    reset_log(save_dir)
+def start_session(id, model, epochs, batch_size, save_dir, data_dir):
 
     # does get cuda:0
     device = "cuda:0" if cuda.is_available() else "cpu"
 
-    device_info(save_dir, data_dir)
+    device_info(save_dir)
 
     print("Using", device)
 
@@ -69,15 +55,22 @@ def start_session(model, epochs, batch_size, save_dir, data_dir):
     # dataset = imagenet.IN(portion=subset)
     dataset = imagenet.IN(data_dir)
     data_loader = DataLoader(dataset.trainset, batch_size=batch_size, shuffle=dataset.shufflemode)
-    data_length = len(dataset.trainset)
+    train_len = len(dataset.trainset)
+    valid_len = len(dataset.validset)
 
     save_path = model_saver.get_path(save_dir)
 
+    log = Printer(save_path, id)
+    status = Status(save_path, id)
+    training_log = MetricLogger(save_path, id, name='train', size=ceil(dataset.trainset/batch_size))
+    valid_log = MetricLogger(save_path, id, name='valid', size=ceil(valid_len/batch_size))
+
     for epoch in range(epochs):
         total_psnr = 0.0
+        total_loss = 0.0
         with tqdm(data_loader, unit="batch") as tepoch:
             current_b = 0
-            print_every = 100
+            print_every = 300
             start = time.time()
             for inputs, _ in tepoch:
                 tepoch.set_description(f"Epoch {epoch}")
@@ -85,8 +78,8 @@ def start_session(model, epochs, batch_size, save_dir, data_dir):
                 current_b += 1
 
                 if(time.time()-start >= print_every):
-                    log(save_dir, f'Current Batch: {current_b},\n       \
-                        Total Batches: {tepoch.total},\n Elapsed Time: {time.time()-start}')
+                    log.print(f'Epoch {epoch}/{epochs}({current_b/tepoch.total}%)')
+                    log.print(f'Elapsed Time: {time.time()-start}')
                     start = time.time()
 
                 inputs = inputs.to(device)
@@ -104,13 +97,15 @@ def start_session(model, epochs, batch_size, save_dir, data_dir):
                 tepoch.set_postfix({"loss":loss.item(), "pSNR":psnr})
                 
                 total_psnr += psnr
+                total_loss += loss.item()
 
             current_batch += 1
 
-        print_status(save_dir, "\n\n\t\tpSNR: {}\n\n".format(total_psnr/ceil(data_length/batch_size)))
+        # print_status(save_dir, "\n\n\t\tpSNR: {}\n\n".format(total_psnr/ceil(data_length/batch_size)))
+        training_log.put(epoch, total_loss, total_psnr)
 
-        log("Progress saved at:", model_saver.save_model(model, save_path, in_progress=True))
+        status.print(f'Progress saved at:, {model_saver.save_model(model, save_path, in_progress=True)}')
 
     saved_path = model_saver.save_model(model, save_path)
 
-    log("Model saved at:", saved_path)
+    log.print("Final model saved at:", saved_path)

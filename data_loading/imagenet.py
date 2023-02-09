@@ -12,8 +12,8 @@ class IN():
             ToTensor(),
             # transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
         ])
-        self.trainset = ImageFolder(root=root, transform=transform)
-        # self.validset = ImageNet(root='E:\Programming\Datasets\train_blurred', train=False, download=True, transform=transform)
+        data = ImageFolder(root=root, transform=transform)
 
-        self.trainset = Subset(self.trainset, list(range(100_000)))
+        self.trainset = Subset(data, list(range(100_000)))
+        self.validset = Subset(data, list(range(100_000, 125_000)))
         self.shufflemode = True
