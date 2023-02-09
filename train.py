@@ -59,7 +59,7 @@ def start_session(model, epochs, batch_size, save_dir, data_dir):
 
     log = Printer(save_dir)
     status = Status(save_dir)
-    training_log = MetricLogger(save_dir, name='train', size=ceil(dataset.trainset/batch_size))
+    training_log = MetricLogger(save_dir, name='train', size=ceil(train_len/batch_size))
     valid_log = MetricLogger(save_dir, name='valid', size=ceil(valid_len/batch_size))
 
     for epoch in range(epochs):
