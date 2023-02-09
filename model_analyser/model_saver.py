@@ -9,7 +9,7 @@ def make_path(data_dir):
     if(not os.path.exists(data_dir)):
         os.mkdir(data_dir)
     else:
-        os.rmdir(data_dir)
+        shutil.rmtree(data_dir)
         os.mkdir(data_dir)
 
     return Path(data_dir)
