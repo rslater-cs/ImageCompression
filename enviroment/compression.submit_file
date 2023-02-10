@@ -45,7 +45,7 @@ request_CPUs   = 1
 request_memory = 4G
 
 #This job will complete in less than 36 hours
-+JobRunTime = 36
++JobRunTime = 42
 
 #This job can checkpoint
 +CanCheckpoint = true
@@ -58,7 +58,7 @@ MaxJobRetirementTime = 0
 
 # -----------------------------------
 # Queue commands. We can use variables and flags to launch our command with multiple options (as you would from the command line)
-arguments = $(script) --epochs 2 --batch 32 --save_dir $(model_dir) --imagenet $(imagenet_dir) --embed $(embed_dim) --transfer $(transfer_dim) --window $(window_size) --depth $(depth)
+arguments = $(script) --epochs 50 --batch 32 --save_dir $(model_dir) --imagenet $(imagenet_dir) --embed $(embed_dim) --transfer $(transfer_dim) --window $(window_size) --depth $(depth)
 
 # depths: [3,4], embeddings: [24,48,96(d3)], transfer_dim: [8, 16, 32], window_size: [2, 4, 8]
 # NOTE: Variable names can't contain dashes!

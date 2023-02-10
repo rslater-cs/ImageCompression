@@ -133,7 +133,7 @@ def start_session(model, epochs, batch_size, save_dir, data_dir):
 
     tst_psnr, tst_loss = valid(model, criterion, testloader, device)
 
-    batches = ceil(valid_len/batch_size)
+    batches = ceil(test_len/batch_size)
     status.print(f'Loss: {tst_loss/batches}, PSNR: {tst_psnr/batches}')
 
     saved_path = model_saver.save_model(model, save_dir)
