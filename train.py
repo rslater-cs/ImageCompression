@@ -104,7 +104,7 @@ def start_session(model, epochs, batch_size, save_dir, data_dir):
 
     saved_path = model_saver.save_model(model, save_dir)
 
-    log.print("Final model saved at:", saved_path)
+    log.print(f'Final model saved at: {saved_path}')
 
     training_log.close()
     valid_log.close()
