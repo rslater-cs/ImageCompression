@@ -16,4 +16,5 @@ class IN():
 
         self.trainset = Subset(data, list(range(100_000)))
         self.validset = Subset(data, list(range(100_000, 125_000)))
+        self.testset = Subset(data, list(range(125_000, 175_000)))
         self.shufflemode = True
