@@ -49,7 +49,7 @@ if __name__ == "__main__":
         dropout=0.5)
 
     full_save_path = f'{args["save_dir"]}/SwinCompression_e{args["embed_dim"]}_t{args["transfer_dim"]}_w{args["window_size"]}_d{args["depth"]}'
-    make_path(full_save_path)
+    full_save_path = make_path(full_save_path)
 
     start_session(model=compressor, epochs=args['epochs'], batch_size=args['batch_size'], save_dir=full_save_path, data_dir=args['imagenet_dir'])
 
