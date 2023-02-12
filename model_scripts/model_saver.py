@@ -9,8 +9,9 @@ def make_path(data_dir):
     if(not os.path.exists(data_dir)):
         os.mkdir(data_dir)
     else:
-        shutil.rmtree(data_dir)
-        os.mkdir(data_dir)
+        if(not os.path.exists(f'{data_dir}/checkpoint.pt')):
+            shutil.rmtree(data_dir)
+            os.mkdir(data_dir)
 
     return Path(data_dir)
 

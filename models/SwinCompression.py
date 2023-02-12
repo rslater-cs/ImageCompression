@@ -291,11 +291,6 @@ class FullSwinCompressor(nn.Module):
             norm_layer=norm_layer,
             block=block
         )
-
-        self.quantise = Quantise8()
-        self.dequantise = DeQuantise8()
-
-        self.vit_block = ViTBlock(num_heads=num_heads[-1], num_features=transfer_dim, mlp_ratio=mlp_ratio, dropout=dropout)
         
         output_dim = embed_dim * 2 ** (len(depths)-1)
 

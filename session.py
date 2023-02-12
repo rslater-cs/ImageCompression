@@ -3,7 +3,7 @@ import os
 
 from models import SwinCompression
 from train import start_session
-from model_analyser.model_saver import make_path
+from model_scripts.model_saver import make_path
 
 def dir_path(path):
     if os.path.isdir(path):
@@ -54,3 +54,4 @@ if __name__ == "__main__":
     start_session(model=compressor, epochs=args['epochs'], batch_size=args['batch_size'], save_dir=full_save_path, data_dir=args['imagenet_dir'])
 
 # session.py -s ./saved_models -i ./ -e 1 -b 1 -m 12 -t 16 -w 2 -d 3
+# Need to create a script to setup restoration from checkpoint

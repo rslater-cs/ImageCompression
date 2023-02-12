@@ -1,4 +1,4 @@
-from torch import cuda, log10
+from torch import cuda, log10, save, load
 from math import ceil
 import torch.optim as optim
 from torch.nn import MSELoss, Module
@@ -9,7 +9,7 @@ from loggers.metrics import MetricLogger
 from tqdm import tqdm
 
 from data_loading import imagenet, cifar_10
-from model_analyser import model_requirements, model_saver
+from model_scripts import model_requirements, model_saver
 
 import os
 
@@ -95,7 +95,7 @@ def valid(model: Module, criterion: MSELoss, batches, device):
     return total_psnr, total_loss
 
 
-def start_session(model, epochs, batch_size, save_dir, data_dir):
+def start_session(model: Module, epochs, batch_size, save_dir, data_dir):
 
     # does get cuda:0
     device = "cuda:0" if cuda.is_available() else "cpu"
@@ -111,6 +111,13 @@ def start_session(model, epochs, batch_size, save_dir, data_dir):
     criterion = MSELoss()
     optimizer = optim.Adam(model.parameters(), lr=1e-4)
 
+    start_epoch = 0
+    if(os.path.exists(f'{save_dir}/checkpoint.pt')):
+        checkpoint = load(f'{save_dir}/checkpoint.pt')
+        start_epoch = checkpoint['epoch']+1
+        model.load_state_dict(checkpoint['model'])
+        optimizer.load_state_dict(checkpoint['optim'])
+
     # dataset = imagenet.IN(portion=subset)
     dataset = imagenet.IN(data_dir)
     trainloader = DataLoader(dataset.trainset, batch_size=batch_size, shuffle=dataset.shufflemode)
@@ -124,7 +131,7 @@ def start_session(model, epochs, batch_size, save_dir, data_dir):
     valid_batches = ceil(valid_len/batch_size)
 
     test_len = len(dataset.testset)
-    test_batches = ceil(valid_len/batch_size)
+    test_batches = ceil(test_len/batch_size)
 
     log = Printer(save_dir)
     status = Status(save_dir)
@@ -141,7 +148,7 @@ def start_session(model, epochs, batch_size, save_dir, data_dir):
     signal.signal(signal.SIGTERM, exit_handler)
     signal.signal(signal.SIGINT, exit_handler)
 
-    for epoch in range(epochs):
+    for epoch in range(start_epoch, epochs):
         with tqdm(trainloader, unit="batch") as tepoch:
             tr_psnr, tr_loss = train(model, optimizer, criterion, tepoch, save_dir, device, epoch, epochs)
             v_psnr, v_loss = valid(model, criterion, validloader, device)
@@ -152,15 +159,25 @@ def start_session(model, epochs, batch_size, save_dir, data_dir):
             log.print(f'Epoch {epoch}: Loss = {tr_loss/train_batches}, PSNR = {tr_psnr/train_batches}')
             log.print(f'Valid Score: Loss = {v_loss/valid_batches}, PSNR = {v_psnr/valid_batches}')
 
-        status.print(f'Progress saved at:, {model_saver.save_model(model, save_dir, in_progress=True)}')
+        # status.print(f'Progress saved at:, {model_saver.save_model(model, save_dir, in_progress=True)}')
+        save({
+            'epoch': epoch,
+            'model': model.state_dict(),
+            'optim': optimizer.state_dict()
+        }, f'{save_dir}/checkpoint.pt')
 
     tst_psnr, tst_loss = valid(model, criterion, testloader, device)
 
     status.print(f'Loss: {tst_loss/test_batches}, PSNR: {tst_psnr/test_batches}')
     test_log.put(0, tst_loss, tst_psnr)
 
-    saved_path = model_saver.save_model(model, save_dir)
+    save({
+        'encoder': model.encoder.state_dict(),
+        'decoder': model.decoder.state_dict()
+    }, f'{save_dir}/final_model.pt')
 
-    log.print(f'Final model saved at: {saved_path}')
+    os.remove(f'{save_dir}/checkpoint.pt')
+
+    log.print(f'Final model saved at: {save_dir}')
 
 
