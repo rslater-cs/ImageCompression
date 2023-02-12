@@ -15,6 +15,9 @@ import os
 
 import time
 
+import atexit
+import signal
+
 def device_info(save_dir):
     writer = Printer(save_dir, name="gpu_info")
     writer.print("Has Cuda:")
@@ -35,8 +38,9 @@ def pSNR(mse):
     
     return psnr
 
-def train(model: Module, optimizer: optim.Optimizer, criterion: MSELoss, tepoch: tqdm, log: Printer, device, epoch: int, epochs: int):
+def train(model: Module, optimizer: optim.Optimizer, criterion: MSELoss, tepoch: tqdm, path, device, epoch: int, epochs: int):
     model.requires_grad_(True)
+    log = Printer(path, name = "current_epoch")
     total_psnr = 0.0
     total_loss = 0.0
     current_b = 0
@@ -112,33 +116,51 @@ def start_session(model, epochs, batch_size, save_dir, data_dir):
     trainloader = DataLoader(dataset.trainset, batch_size=batch_size, shuffle=dataset.shufflemode)
     validloader = DataLoader(dataset.validset, batch_size=batch_size, shuffle=False)
     testloader = DataLoader(dataset.testset, batch_size=batch_size, shuffle=False)
+
     train_len = len(dataset.trainset)
+    train_batches = ceil(train_len/batch_size)
+
     valid_len = len(dataset.validset)
+    valid_batches = ceil(valid_len/batch_size)
+
     test_len = len(dataset.testset)
+    test_batches = ceil(valid_len/batch_size)
 
     log = Printer(save_dir)
     status = Status(save_dir)
-    training_log = MetricLogger(save_dir, name='train', size=ceil(train_len/batch_size))
-    valid_log = MetricLogger(save_dir, name='valid', size=ceil(valid_len/batch_size))
+    training_log = MetricLogger(save_dir, name='train', size=train_batches)
+    valid_log = MetricLogger(save_dir, name='valid', size=valid_batches)
+    test_log = MetricLogger(save_dir, name="test", size =test_batches)
+
+    def exit_handler():
+        training_log.close()
+        valid_log.close()
+        test_log.close()
+
+    atexit.register(exit_handler)
+    signal.signal(signal.SIGTERM, exit_handler)
+    signal.signal(signal.SIGINT, exit_handler)
 
     for epoch in range(epochs):
         with tqdm(trainloader, unit="batch") as tepoch:
-            tr_psnr, tr_loss = train(model, optimizer, criterion, tepoch, log, device, epoch, epochs)
+            tr_psnr, tr_loss = train(model, optimizer, criterion, tepoch, save_dir, device, epoch, epochs)
             v_psnr, v_loss = valid(model, criterion, validloader, device)
 
             training_log.put(epoch, tr_loss, tr_psnr)
             valid_log.put(epoch, v_loss, v_psnr)
 
+            log.print(f'Epoch {epoch}: Loss = {tr_loss/train_batches}, PSNR = {tr_psnr/train_batches}')
+            log.print(f'Valid Score: Loss = {v_loss/valid_batches}, PSNR = {v_psnr/valid_batches}')
+
         status.print(f'Progress saved at:, {model_saver.save_model(model, save_dir, in_progress=True)}')
 
     tst_psnr, tst_loss = valid(model, criterion, testloader, device)
 
-    batches = ceil(test_len/batch_size)
-    status.print(f'Loss: {tst_loss/batches}, PSNR: {tst_psnr/batches}')
+    status.print(f'Loss: {tst_loss/test_batches}, PSNR: {tst_psnr/test_batches}')
+    test_log.put(0, tst_loss, tst_psnr)
 
     saved_path = model_saver.save_model(model, save_dir)
 
     log.print(f'Final model saved at: {saved_path}')
 
-    training_log.close()
-    valid_log.close()
+
