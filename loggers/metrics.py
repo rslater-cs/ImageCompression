@@ -2,9 +2,9 @@ import csv
 
 class MetricLogger:
     
-    def __init__(self, path, name, size):
+    def __init__(self, path, name, size, mode='w'):
         path = f'{path}/{name}.csv'
-        self.file = open(path, 'w', newline='')
+        self.file = open(path, mode, newline='')
         self.writer = csv.writer(self.file)
         self.writer.writerow(["epoch", f"{name}_loss", f"{name}_psnr"])
         self.size = size

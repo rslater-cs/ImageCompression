@@ -112,11 +112,13 @@ def start_session(model: Module, epochs, batch_size, save_dir, data_dir):
     optimizer = optim.Adam(model.parameters(), lr=1e-4)
 
     start_epoch = 0
+    mode = 'w'
     if(os.path.exists(f'{save_dir}/checkpoint.pt')):
         checkpoint = load(f'{save_dir}/checkpoint.pt')
         start_epoch = checkpoint['epoch']+1
         model.load_state_dict(checkpoint['model'])
         optimizer.load_state_dict(checkpoint['optim'])
+        mode = 'a'
 
     # dataset = imagenet.IN(portion=subset)
     dataset = imagenet.IN(data_dir)
@@ -133,11 +135,11 @@ def start_session(model: Module, epochs, batch_size, save_dir, data_dir):
     test_len = len(dataset.testset)
     test_batches = ceil(test_len/batch_size)
 
-    log = Printer(save_dir)
+    log = Printer(save_dir, mode=mode)
     status = Status(save_dir)
-    training_log = MetricLogger(save_dir, name='train', size=train_batches)
-    valid_log = MetricLogger(save_dir, name='valid', size=valid_batches)
-    test_log = MetricLogger(save_dir, name="test", size =test_batches)
+    training_log = MetricLogger(save_dir, name='train', size=train_batches, mode=mode)
+    valid_log = MetricLogger(save_dir, name='valid', size=valid_batches, mode=mode)
+    test_log = MetricLogger(save_dir, name="test", size =test_batches, mode=mode)
 
     def exit_handler():
         training_log.close()

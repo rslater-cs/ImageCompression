@@ -1,7 +1,7 @@
 class Printer:
-    def __init__(self, path, name="output") -> None:
+    def __init__(self, path, name="output", mode='w') -> None:
         self.path = f'{path}/{name}.txt'
-        file = open(self.path, 'w')
+        file = open(self.path, mode)
         file.close()
 
     def print(self, message):
