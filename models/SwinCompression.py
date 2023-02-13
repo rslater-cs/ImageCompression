@@ -98,7 +98,7 @@ class Encoder(SwinTransformer):
 
         self.out_conv = nn.Conv2d(num_features, output_dim, kernel_size=1, stride=1)
 
-        self.quantise = Quantise8()
+        # self.quantise = Quantise8()
 
     def forward(self, x):
         #input size: B, C, H, W
@@ -111,9 +111,9 @@ class Encoder(SwinTransformer):
         x = self.out_conv(x)
 
         # x: C*H*W B
-        x, minx, maxx = self.quantise(x)
+        # x, minx, maxx = self.quantise(x)
 
-        return x, minx, maxx
+        return x
 
 # While the normal Swin Tranformer merges patches, the decompression requires 
 # the patches be split to reach the original resolution of the input image
@@ -181,7 +181,7 @@ class Decoder(nn.Module):
         if norm_layer is None:
             norm_layer = partial(nn.LayerNorm, eps=1e-5)
 
-        self.dequantise = DeQuantise8()
+        # self.dequantise = DeQuantise8()
 
         self.vit_block = ViTBlock(num_heads=num_heads[-1], num_features=input_embed_dim, mlp_ratio=mlp_ratio, dropout=dropout)
 
@@ -241,9 +241,9 @@ class Decoder(nn.Module):
                     nn.init.zeros_(m.bias)
         
 
-    def forward(self, x, minx, maxx, shape):
+    def forward(self, x):
         # x: B C H W
-        x = self.dequantise(x, minx, maxx, shape)
+        # x = self.dequantise(x, minx, maxx, shape)
 
         # x: B C H W
         x = self.vit_block(x)
@@ -309,10 +309,10 @@ class FullSwinCompressor(nn.Module):
         )
 
     def forward(self, x):
-        hw_reduction = 2 ** self.depth
-        shape = (x.shape[0], self.transfer_dim, x.shape[2]//hw_reduction, x.shape[3]//hw_reduction)
-        x, minx, maxx = self.encoder(x)
-        x = self.decoder(x, minx, maxx, shape)
+        # hw_reduction = 2 ** self.depth
+        # shape = (x.shape[0], self.transfer_dim, x.shape[2]//hw_reduction, x.shape[3]//hw_reduction)
+        x = self.encoder(x)
+        x = self.decoder(x)
 
         return x
 
