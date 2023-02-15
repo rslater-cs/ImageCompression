@@ -15,9 +15,6 @@ import os
 
 import time
 
-import atexit
-import signal
-
 def device_info(save_dir):
     writer = Printer(save_dir, name="gpu_info")
     writer.print("Has Cuda:")
@@ -54,7 +51,7 @@ def train(model: Module, optimizer: optim.Optimizer, criterion: MSELoss, tepoch:
 
         if(time.time()-curr >= print_every):
             curr = time.time()
-            log.print(f'Epoch {epoch}/{epochs}({100*current_b/tepoch.total}%)')
+            log.print(f'Epoch {epoch+1}/{epochs}({100*current_b/tepoch.total}%)')
             log.print(f'Elapsed Time: {curr-start}')
 
         inputs = inputs.to(device)
@@ -105,6 +102,7 @@ def start_session(model: Module, epochs, batch_size, save_dir, data_dir):
     print("Using", device)
 
     model = model.to(device)
+    model.train()
     param_count = model_requirements.get_parameters(model)
     print("TOTAL PARAMETERS:", f'{param_count:,}')
 
@@ -139,16 +137,7 @@ def start_session(model: Module, epochs, batch_size, save_dir, data_dir):
     status = Status(save_dir)
     training_log = MetricLogger(save_dir, name='train', size=train_batches, mode=mode)
     valid_log = MetricLogger(save_dir, name='valid', size=valid_batches, mode=mode)
-    test_log = MetricLogger(save_dir, name="test", size =test_batches, mode=mode)
-
-    def exit_handler():
-        training_log.close()
-        valid_log.close()
-        test_log.close()
-
-    atexit.register(exit_handler)
-    signal.signal(signal.SIGTERM, exit_handler)
-    signal.signal(signal.SIGINT, exit_handler)
+    test_log = MetricLogger(save_dir, name="test", size=test_batches, mode=mode)
 
     for epoch in range(start_epoch, epochs):
         with tqdm(trainloader, unit="batch") as tepoch:
@@ -168,6 +157,7 @@ def start_session(model: Module, epochs, batch_size, save_dir, data_dir):
             'optim': optimizer.state_dict()
         }, f'{save_dir}/checkpoint.pt')
 
+    model.eval()
     tst_psnr, tst_loss = valid(model, criterion, testloader, device)
 
     status.print(f'Loss: {tst_loss/test_batches}, PSNR: {tst_psnr/test_batches}')

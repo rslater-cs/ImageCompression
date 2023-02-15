@@ -96,7 +96,11 @@ class Encoder(SwinTransformer):
             stochastic_depth_prob, num_classes, norm_layer, block)
         num_features = embed_dim * 2 ** (len(depths) - 1)
 
+        if(norm_layer == None):
+            norm_layer = nn.LayerNorm
+
         self.out_conv = nn.Conv2d(num_features, output_dim, kernel_size=1, stride=1)
+        self.norm = norm_layer(output_dim)
 
         # self.quantise = Quantise8()
 
@@ -109,6 +113,9 @@ class Encoder(SwinTransformer):
         # x: B, C, H, W
         x = torch.permute(x, (0, 3, 1, 2))
         x = self.out_conv(x)
+        x = torch.permute(x, (0, 2, 3, 1))
+        x = self.norm(x)
+        x = torch.permute(x, (0, 3, 1, 2))
 
         # x: C*H*W B
         # x, minx, maxx = self.quantise(x)
