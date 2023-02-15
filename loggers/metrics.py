@@ -4,7 +4,7 @@ class MetricLogger:
     
     def __init__(self, path, name, size, mode='w'):
         self.path = f'{path}/{name}.csv'
-        file = open(path, mode, newline='')
+        file = open(self.path, mode, newline='')
         writer = csv.writer(file)
         if(mode=='w'):
             writer.writerow(["epoch", f"{name}_loss", f"{name}_psnr"])
