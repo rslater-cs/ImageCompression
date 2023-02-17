@@ -104,7 +104,10 @@ def start_session(model: Module, epochs, batch_size, save_dir, data_dir):
     model = model.to(device)
     model.train()
     param_count = model_requirements.get_parameters(model)
-    print("TOTAL PARAMETERS:", f'{param_count:,}')
+    print("TOTAL PARAMETERS:", f'{param_count}')
+
+    param_doc = Printer(save_dir, name="model_info", mode='w')
+    param_doc.print(f'total parameters: {param_count}')
 
     criterion = MSELoss()
     optimizer = optim.Adam(model.parameters(), lr=1e-4)
