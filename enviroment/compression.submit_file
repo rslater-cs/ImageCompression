@@ -42,7 +42,7 @@ request_GPUs   = 1
 # this needs to be specified for the AI@Surrey cluster if requesting a GPU
 +GPUMem          = 21000
 request_CPUs   = 1
-request_memory = 4G
+request_memory = 6G
 
 #This job will complete in less than 72 hours
 +JobRunTime = 72
