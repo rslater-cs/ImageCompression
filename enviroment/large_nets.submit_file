@@ -38,9 +38,9 @@ requirements = (CUDAGlobalMemoryMb > 20000) && (CUDAGlobalMemoryMb <  25000) && 
 
 # --------------------------------------
 # Resources
-request_GPUs   = 1
+request_GPUs   = 2
 # this needs to be specified for the AI@Surrey cluster if requesting a GPU
-+GPUMem          = 35000
++GPUMem          = 21000
 request_CPUs   = 1
 request_memory = 6G
 
