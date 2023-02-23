@@ -93,15 +93,15 @@ def valid(model: Module, criterion: MSELoss, batches, device):
 
 
 def start_session(model: Module, epochs, batch_size, save_dir, data_dir):
+    device_info(save_dir)
 
     # does get cuda:0
     base_device = "cuda:0" if cuda.is_available() else "cpu"
     devices = [i for i in range(cuda.device_count())]
 
-    device_info(save_dir)
-
     print("Using Devices", devices)
 
+    model = model.to(base_device)
     model = DataParallel(model, device_ids=devices)
     model.train()
     param_count = model_requirements.get_parameters(model)
