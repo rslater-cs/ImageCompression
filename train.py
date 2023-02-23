@@ -96,7 +96,7 @@ def start_session(model: Module, epochs, batch_size, save_dir, data_dir):
 
     # does get cuda:0
     base_device = "cuda:0" if cuda.is_available() else "cpu"
-    devices = [i in range(cuda.device_count())]
+    devices = [i for i in range(cuda.device_count())]
 
     device_info(save_dir)
 
