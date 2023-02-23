@@ -141,6 +141,7 @@ class PatchSplitting(nn.Module):
 
     def forward(self, x: torch.Tensor):
         B, H, W, C = x.shape
+        device = x.get_device()
 
         assert C % 2 == 0, "channels not divisible by 2"
 
@@ -152,7 +153,7 @@ class PatchSplitting(nn.Module):
 
         x_s = torch.split(x, split_size_or_sections=diff, dim=3)
 
-        device = "cuda:0" if torch.cuda.is_available() else "cpu"
+        # device = "cuda:0" if torch.cuda.is_available() else "cpu"
 
         x = torch.empty(B, 2*H, 2*W, C//2).to(device)
 

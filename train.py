@@ -1,7 +1,7 @@
 from torch import cuda, log10, save, load
 from math import ceil
 import torch.optim as optim
-from torch.nn import MSELoss, Module
+from torch.nn import MSELoss, Module, DataParallel
 from torch.utils.data import DataLoader
 from loggers.printing import Printer, Status
 from loggers.metrics import MetricLogger
@@ -95,13 +95,14 @@ def valid(model: Module, criterion: MSELoss, batches, device):
 def start_session(model: Module, epochs, batch_size, save_dir, data_dir):
 
     # does get cuda:0
-    device = "cuda:0" if cuda.is_available() else "cpu"
+    base_device = "cuda:0" if cuda.is_available() else "cpu"
+    devices = [i in range(cuda.device_count())]
 
     device_info(save_dir)
 
-    print("Using", device)
+    print("Using Devices", devices)
 
-    model = model.to(device)
+    model = DataParallel(model, device_ids=devices)
     model.train()
     param_count = model_requirements.get_parameters(model)
     print("TOTAL PARAMETERS:", f'{param_count}')
@@ -144,8 +145,8 @@ def start_session(model: Module, epochs, batch_size, save_dir, data_dir):
 
     for epoch in range(start_epoch, epochs):
         with tqdm(trainloader, unit="batch") as tepoch:
-            tr_psnr, tr_loss = train(model, optimizer, criterion, tepoch, save_dir, device, epoch, epochs)
-            v_psnr, v_loss = valid(model, criterion, validloader, device)
+            tr_psnr, tr_loss = train(model, optimizer, criterion, tepoch, save_dir, base_device, epoch, epochs)
+            v_psnr, v_loss = valid(model, criterion, validloader, base_device)
 
             training_log.put(epoch, tr_loss, tr_psnr)
             valid_log.put(epoch, v_loss, v_psnr)
@@ -161,7 +162,7 @@ def start_session(model: Module, epochs, batch_size, save_dir, data_dir):
         }, f'{save_dir}/checkpoint.pt')
 
     model.eval()
-    tst_psnr, tst_loss = valid(model, criterion, testloader, device)
+    tst_psnr, tst_loss = valid(model, criterion, testloader, base_device)
 
     status.print(f'Loss: {tst_loss/test_batches}, PSNR: {tst_psnr/test_batches}')
     test_log.put(0, tst_loss, tst_psnr)
