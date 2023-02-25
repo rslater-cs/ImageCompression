@@ -102,7 +102,6 @@ def start_session(model: Module, epochs, batch_size, save_dir, data_dir):
     print("Using Devices", devices)
 
     model = model.to(base_device)
-    model = DataParallel(model, device_ids=devices)
     model.train()
     param_count = model_requirements.get_parameters(model)
     print("TOTAL PARAMETERS:", f'{param_count}')
@@ -121,6 +120,8 @@ def start_session(model: Module, epochs, batch_size, save_dir, data_dir):
         model.load_state_dict(checkpoint['model'])
         optimizer.load_state_dict(checkpoint['optim'])
         mode = 'a'
+    
+    model = DataParallel(model, device_ids=devices)
 
     # dataset = imagenet.IN(portion=subset)
     dataset = imagenet.IN(data_dir)
@@ -157,7 +158,7 @@ def start_session(model: Module, epochs, batch_size, save_dir, data_dir):
         # status.print(f'Progress saved at:, {model_saver.save_model(model, save_dir, in_progress=True)}')
         save({
             'epoch': epoch,
-            'model': model.state_dict(),
+            'model': model.module.state_dict(),
             'optim': optimizer.state_dict()
         }, f'{save_dir}/checkpoint.pt')
 
@@ -168,8 +169,8 @@ def start_session(model: Module, epochs, batch_size, save_dir, data_dir):
     test_log.put(0, tst_loss, tst_psnr)
 
     save({
-        'encoder': model.encoder.state_dict(),
-        'decoder': model.decoder.state_dict()
+        'encoder': model.module.encoder.state_dict(),
+        'decoder': model.module.decoder.state_dict()
     }, f'{save_dir}/final_model.pt')
 
     os.remove(f'{save_dir}/checkpoint.pt')
