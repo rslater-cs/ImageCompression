@@ -3,7 +3,7 @@ import os
 
 from models import SwinCompression
 from train import start_session
-from model_scripts.model_saver import make_path
+from model_scripts.data_saver import make_path
 
 def dir_path(path):
     if os.path.isdir(path):

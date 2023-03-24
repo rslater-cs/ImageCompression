@@ -1,20 +1,34 @@
-from models.SwinCompression import FullSwinCompressor
-from data_loading import cifar_10
-from torch.utils.data import DataLoader
-from torch.nn import MSELoss
+import torch
+from model_scripts import data_saver
 
-encoder = FullSwinCompressor(patch_size=[2,2], embed_dim=48, transfer_dim=8, depths=[2,2,2], num_heads=[2,2,2], window_size=[4,4])
+M = (28*28*64)
+split = 0.05
+N = int(0.005*M)
 
-dataset = cifar_10.CIFAR()
-dataloader = DataLoader(dataset.trainset, batch_size=7)#
+print("string length", N)
+print("chunks =", M//N)
 
-crit = MSELoss()
+test_data = (torch.rand((N,))*255).type(torch.uint8)
 
-for i in range(1):
-    for inputs, _ in iter(dataloader):
-        outputs = encoder(inputs)
+print(test_data)
 
-        loss = crit(outputs, inputs)
-        print(loss)
+message, frequency_table = data_saver.arithmetic_encode(test_data)
 
-        break
+n, d = message.as_integer_ratio()
+print((n.bit_length()+7)//8)
+print((d.bit_length()+7)//8)
+
+print(frequency_table)
+print(str(message)[:100])
+
+decoded_data = data_saver.arithmetic_decode(frequency_table, message)
+
+print(decoded_data)
+
+correct = True
+
+for i in range(N):
+    if(test_data[i] != decoded_data[i]):
+        correct = False
+
+print("Success =",correct)

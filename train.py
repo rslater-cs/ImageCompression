@@ -9,7 +9,7 @@ from loggers.metrics import MetricLogger
 from tqdm import tqdm
 
 from data_loading import imagenet, cifar_10
-from model_scripts import model_requirements, model_saver
+from model_scripts import data_saver, model_requirements
 
 import os
 
