@@ -190,10 +190,6 @@ class Decoder(nn.Module):
             norm_layer = partial(nn.LayerNorm, eps=1e-5)
 
         # self.dequantise = DeQuantise8()
-
-        self.vit_block = ViTBlock(num_heads=num_heads[-1], num_features=input_embed_dim, mlp_ratio=mlp_ratio, dropout=dropout)
-
-        layers: List[nn.Module] = []
         
         self.embedding = nn.Sequential(
             nn.Conv2d(
@@ -203,6 +199,10 @@ class Decoder(nn.Module):
             norm_layer(embed_dim),
             Permute([0, 3, 1, 2])
         )
+
+        self.vit_block = ViTBlock(num_heads=num_heads[-1], num_features=embed_dim, mlp_ratio=mlp_ratio, dropout=dropout)
+
+        layers: List[nn.Module] = []
 
         layers.append(
             nn.Sequential(
