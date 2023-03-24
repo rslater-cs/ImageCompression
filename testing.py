@@ -1,34 +1,40 @@
 import torch
 from model_scripts import data_saver
+from range_coder import RangeEncoder, RangeDecoder, prob_to_cum_freq
 
-M = (28*28*64)
-split = 0.05
-N = int(0.005*M)
+M = (28*28*1)
+split = 1.0
+N = int(split*M)
 
 print("string length", N)
 print("chunks =", M//N)
 
-test_data = (torch.rand((N,))*255).type(torch.uint8)
+test_data = (torch.randn((N,))*255).type(torch.uint8)
 
-print(test_data)
+frequency_table = test_data.bincount()
+probability_table = frequency_table/torch.sum(frequency_table)
+probability_table = probability_table.tolist()
 
-message, frequency_table = data_saver.arithmetic_encode(test_data)
+test_data = test_data.tolist()
 
-n, d = message.as_integer_ratio()
-print((n.bit_length()+7)//8)
-print((d.bit_length()+7)//8)
+print(test_data[-10:])
 
-print(frequency_table)
-print(str(message)[:100])
+cum_freq = prob_to_cum_freq(probability_table, N)
 
-decoded_data = data_saver.arithmetic_decode(frequency_table, message)
+encoder = RangeEncoder('./saved_images/testfile.bin')
+encoder.encode(test_data, cum_freq)
+encoder.close()
 
-print(decoded_data)
+decoder = RangeDecoder('./saved_images/testfile.bin')
+decoded_data = decoder.decode(len(test_data), cum_freq)
+decoder.close()
+
+print(decoded_data[-10:])
 
 correct = True
-
-for i in range(N):
-    if(test_data[i] != decoded_data[i]):
+for i in range(len(test_data)):
+    if test_data[i] != decoded_data[i]:
         correct = False
+        break
 
-print("Success =",correct)
+print("Successful compression =", correct)
