@@ -194,19 +194,14 @@ class Decoder(nn.Module):
         self.vit_block = ViTBlock(num_heads=num_heads[-1], num_features=input_embed_dim, mlp_ratio=mlp_ratio, dropout=dropout)
 
         layers: List[nn.Module] = []
-        
-        self.embedding = nn.Sequential(
-            nn.Conv2d(
-                input_embed_dim, embed_dim, kernel_size=1, stride=1
-            ),
-            Permute([0, 2, 3, 1]),
-            norm_layer(embed_dim),
-            Permute([0, 3, 1, 2])
-        )
 
         layers.append(
             nn.Sequential(
-                Permute([0, 2, 3, 1])
+                nn.Conv2d(
+                    input_embed_dim, embed_dim, kernel_size=1, stride=1
+                ),
+                Permute([0, 2, 3, 1]),
+                norm_layer(embed_dim)
             )
         )
 
@@ -257,8 +252,6 @@ class Decoder(nn.Module):
     def forward(self, x):
         # x: B C H W
         # x = self.dequantise(x, minx, maxx, shape)
-
-        x = self.embedding(x)
 
         # x: B C H W
         x = self.vit_block(x)
