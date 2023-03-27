@@ -69,29 +69,29 @@ imagenet_dir = /mnt/fast/datasets/still/ImageNet
 
 
 depth = 3
-window_size = 4
-embed_dim = 48
+window_size = 8
+embed_dim = 24
 transfer_dim = 1
 
 queue 
 
 depth = 3
-window_size = 4
-embed_dim = 48
+window_size = 8
+embed_dim = 24
 transfer_dim = 2
 
 queue 
 
 depth = 3
-window_size = 4
-embed_dim = 48
+window_size = 8
+embed_dim = 24
 transfer_dim = 4
 
 queue 
 
 depth = 3
-window_size = 4
-embed_dim = 48
+window_size = 8
+embed_dim = 24
 transfer_dim = 8
 
 queue  

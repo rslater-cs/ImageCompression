@@ -111,6 +111,7 @@ def start_session(model: Module, epochs, batch_size, save_dir, data_dir):
 
     criterion = MSELoss()
     optimizer = optim.Adam(model.parameters(), lr=1e-4)
+    optimizer = optim.Adam(model.parameters(), lr=1e-3)
 
     start_epoch = 0
     mode = 'w'
