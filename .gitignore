@@ -5,4 +5,4 @@ __pycache__
 *.pyc
 cuda-ubuntu2004.pin.1
 cuda-keyring_1.0-1_all.deb
-saved_images/testfile.bin
+*bin
