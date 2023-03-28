@@ -5,10 +5,11 @@ from range_coder import RangeEncoder, RangeDecoder, prob_to_cum_freq
 from argparse import ArgumentParser
 
 parser = ArgumentParser()
+parser.add_argument("-r", "--res", dest="resolution", help="The height and width", type=int)
 parser.add_argument("-t", "--transfer_dim", dest="channels", help="The number of channels to be encoded", type=int)
 args = vars(parser.parse_args())
 
-M = (28*28*args["channels"])
+M = (args["resolution"]*args["resolution"]*args["channels"])
 split = 1.0
 N = int(split*M)
 
@@ -27,11 +28,11 @@ print(test_data[-10:])
 
 cum_freq = prob_to_cum_freq(probability_table, N)
 
-encoder = RangeEncoder(f'./saved_images/testfile_{args["channels"]}.bin')
+encoder = RangeEncoder(f'./saved_images/testfile_{args["resolution"]}_{args["channels"]}.bin')
 encoder.encode(test_data, cum_freq)
 encoder.close()
 
-decoder = RangeDecoder(f'./saved_images/testfile_{args["channels"]}.bin')
+decoder = RangeDecoder(f'./saved_images/testfile_{args["resolution"]}_{args["channels"]}.bin')
 decoded_data = decoder.decode(len(test_data), cum_freq)
 decoder.close()
 
