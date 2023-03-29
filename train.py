@@ -1,57 +1,37 @@
-from torch import cuda, log10, save, load
-from math import ceil
+from torch import cuda, save, load, no_grad
 import torch.optim as optim
 from torch.nn import MSELoss, Module, DataParallel
 from torch.utils.data import DataLoader
-from loggers.printing import Printer, Status
-from loggers.metrics import MetricLogger
+
+from data_scripts.loggers.printing import Printer, Status
+from data_scripts.loggers.metrics import MetricLogger
+from data_scripts import imagenet
+from data_scripts.data_saver import save_gpu_stats
+from models import model_requirements, metrics
 
 from tqdm import tqdm
 
-from data_loading import imagenet, cifar_10
-from model_scripts import data_saver, model_requirements
+from math import ceil
 
 import os
-
 import time
 
-def device_info(save_dir):
-    writer = Printer(save_dir, name="gpu_info")
-    writer.print("Has Cuda:")
-    writer.print(str(cuda.is_available()))
-    writer.print("Cuda Device Count:")
-    writer.print(str(cuda.device_count()))
-    writer.print("Current Device:")
-    writer.print(str(cuda.current_device()))
-    writer.print("Current Device ID:")
-    writer.print(str(cuda.get_device_name(cuda.current_device())))
-    writer.print("Device Names:")
-
-    for i in range(cuda.device_count()):
-        writer.print(str(cuda.get_device_name(i)))
-
-def pSNR(mse):
-    psnr = 10*log10(1.0**2/mse)
-    
-    return psnr
-
-def train(model: Module, optimizer: optim.Optimizer, criterion: MSELoss, tepoch: tqdm, path, device, epoch: int, epochs: int):
-    model.requires_grad_(True)
+def train(model: Module, optimizer: optim.Optimizer, tepoch: tqdm, path, device, epoch: int, epochs: int):
     log = Printer(path, name = "current_epoch")
-    total_psnr = 0.0
-    total_loss = 0.0
-    current_b = 0
+
+    mse = MSELoss()
+    average_psnr = metrics.AverageMetric(metrics.PSNR(), batches=len(tepoch))
+    average_loss = metrics.AverageMetric(MSELoss(), batches=len(tepoch))
+
     print_every = 300
     start = time.time()
     curr = time.time()
     for inputs, _ in tepoch:
         tepoch.set_description(f"Epoch {epoch}")
 
-        current_b += 1
-
         if(time.time()-curr >= print_every):
             curr = time.time()
-            log.print(f'Epoch {epoch+1}/{epochs}({100*current_b/tepoch.total}%)')
+            log.print(f'Epoch {epoch+1}/{epochs}({100*average_loss.current/tepoch.total}%)')
             log.print(f'Elapsed Time: {curr-start}')
 
         inputs = inputs.to(device)
@@ -60,58 +40,47 @@ def train(model: Module, optimizer: optim.Optimizer, criterion: MSELoss, tepoch:
         optimizer.zero_grad()
 
         output_images = model(inputs)
-        loss = criterion(output_images, outputs)
-        psnr = pSNR(loss).item()
+        loss = mse(output_images, outputs)
+        avg_psnr = average_psnr(output_images, outputs).item()
+        avg_loss = average_loss(output_images, outputs).item()
 
         loss.backward()
         optimizer.step()
 
-        tepoch.set_postfix({"loss":loss.item(), "pSNR":psnr})
-        
-        total_psnr += psnr
-        total_loss += loss.item()
+        tepoch.set_postfix({"loss":average_loss, "pSNR":avg_psnr})
     
-    return total_psnr, total_loss
+    return avg_psnr, avg_loss
 
-def valid(model: Module, criterion: MSELoss, batches, device):
-    model.requires_grad_(False)
-    total_psnr = 0.0
-    total_loss = 0.0
+def valid(model: Module, batches, device):
+    average_loss = metrics.AverageMetric(MSELoss(), batches=len(batches))
+    average_psnr = metrics.AverageMetric(metrics.PSNR(), batches=len(batches))
+    with no_grad():
+        for inputs, _ in iter(batches):
+            inputs = inputs.to(device)
+            outputs = inputs.clone()
 
-    for inputs, _ in iter(batches):
-        inputs = inputs.to(device)
-        outputs = inputs.clone()
+            output_images = model(inputs)
+            avg_psnr = average_psnr(output_images, outputs).item()
+            avg_loss = average_loss(output_images, outputs).item()
 
-        output_images = model(inputs)
-        loss = criterion(output_images, outputs)
-        psnr = pSNR(loss).item()
-
-        total_psnr += psnr
-        total_loss += loss.item()
-
-    return total_psnr, total_loss
+        return avg_psnr, avg_loss
 
 
 def start_session(model: Module, epochs, batch_size, save_dir, data_dir):
-    device_info(save_dir)
+    save_gpu_stats(save_dir)
 
     # does get cuda:0
     base_device = "cuda:0" if cuda.is_available() else "cpu"
     devices = [i for i in range(cuda.device_count())]
 
-    print("Using Devices", devices)
-
     model = model.to(base_device)
     model.train()
-    param_count = model_requirements.get_parameters(model)
-    print("TOTAL PARAMETERS:", f'{param_count}')
 
+    param_count = model_requirements.get_parameters(model)
     param_doc = Printer(save_dir, name="model_info", mode='w')
     param_doc.print(f'total parameters: {param_count}')
-
-    criterion = MSELoss()
+    
     optimizer = optim.Adam(model.parameters(), lr=1e-4)
-    optimizer = optim.Adam(model.parameters(), lr=1e-3)
 
     start_epoch = 0
     mode = 'w'
@@ -124,22 +93,19 @@ def start_session(model: Module, epochs, batch_size, save_dir, data_dir):
     
     model = DataParallel(model, device_ids=devices)
 
-    # dataset = imagenet.IN(portion=subset)
     dataset = imagenet.IN(data_dir)
     trainloader = DataLoader(dataset.trainset, batch_size=batch_size, shuffle=dataset.shufflemode)
-    validloader = DataLoader(dataset.validset, batch_size=batch_size, shuffle=False)
-    testloader = DataLoader(dataset.testset, batch_size=batch_size, shuffle=False)
-
     train_len = len(dataset.trainset)
     train_batches = ceil(train_len/batch_size)
 
+    validloader = DataLoader(dataset.validset, batch_size=batch_size, shuffle=False)
     valid_len = len(dataset.validset)
     valid_batches = ceil(valid_len/batch_size)
 
+    testloader = DataLoader(dataset.testset, batch_size=batch_size, shuffle=False)
     test_len = len(dataset.testset)
     test_batches = ceil(test_len/batch_size)
-
-    log = Printer(save_dir, mode=mode)
+    
     status = Status(save_dir)
     training_log = MetricLogger(save_dir, name='train', size=train_batches, mode=mode)
     valid_log = MetricLogger(save_dir, name='valid', size=valid_batches, mode=mode)
@@ -147,16 +113,12 @@ def start_session(model: Module, epochs, batch_size, save_dir, data_dir):
 
     for epoch in range(start_epoch, epochs):
         with tqdm(trainloader, unit="batch") as tepoch:
-            tr_psnr, tr_loss = train(model, optimizer, criterion, tepoch, save_dir, base_device, epoch, epochs)
-            v_psnr, v_loss = valid(model, criterion, validloader, base_device)
+            avg_psnr, avg_loss = train(model, optimizer, tepoch, save_dir, base_device, epoch, epochs)
+            v_avg_psnr, v_avg_loss = valid(model, validloader, base_device)
 
-            training_log.put(epoch, tr_loss, tr_psnr)
-            valid_log.put(epoch, v_loss, v_psnr)
+            training_log.put(epoch, avg_loss, avg_psnr)
+            valid_log.put(epoch, v_avg_loss, v_avg_psnr)
 
-            log.print(f'Epoch {epoch}: Loss = {tr_loss/train_batches}, PSNR = {tr_psnr/train_batches}')
-            log.print(f'Valid Score: Loss = {v_loss/valid_batches}, PSNR = {v_psnr/valid_batches}')
-
-        # status.print(f'Progress saved at:, {model_saver.save_model(model, save_dir, in_progress=True)}')
         save({
             'epoch': epoch,
             'model': model.module.state_dict(),
@@ -164,10 +126,10 @@ def start_session(model: Module, epochs, batch_size, save_dir, data_dir):
         }, f'{save_dir}/checkpoint.pt')
 
     model.eval()
-    tst_psnr, tst_loss = valid(model, criterion, testloader, base_device)
+    tst_avg_psnr, tst_avg_loss = valid(model, testloader, base_device)
 
-    status.print(f'Loss: {tst_loss/test_batches}, PSNR: {tst_psnr/test_batches}')
-    test_log.put(0, tst_loss, tst_psnr)
+    status.print(f'Loss: {tst_avg_loss}, PSNR: {tst_avg_psnr}')
+    test_log.put(0, tst_avg_loss, tst_avg_psnr)
 
     save({
         'encoder': model.module.encoder.state_dict(),
@@ -175,7 +137,5 @@ def start_session(model: Module, epochs, batch_size, save_dir, data_dir):
     }, f'{save_dir}/final_model.pt')
 
     os.remove(f'{save_dir}/checkpoint.pt')
-
-    log.print(f'Final model saved at: {save_dir}')
 
 

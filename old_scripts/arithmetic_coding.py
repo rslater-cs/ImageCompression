@@ -1,39 +1,44 @@
-import os
-from pathlib import Path
 import torch
-import shutil
 from decimal import Decimal, getcontext
 from typing import List
-from copy import deepcopy
 
 getcontext().prec = 1000
 
-NETWORK_NAME = 'SwinCompression'
+class AC():
 
-def make_path(data_dir):
-    if(not os.path.exists(data_dir)):
-        os.mkdir(data_dir)
-    else:
-        if(not os.path.exists(f'{data_dir}/checkpoint.pt')):
-            shutil.rmtree(data_dir)
-            os.mkdir(data_dir)
-
-    return Path(data_dir)
+    def encode(self, data: torch.Tensor):
+        data = data.flatten()
+        freq_map = self.create_map(data)
+        probs = self.create_probs(freq_map)
 
 
-def save_model(model, path: Path, in_progress=False):
-    if(in_progress):
-        encoder_path = path / "encoder_progress.pt"
-        decoder_path = path / "decoder_progress.pt"
-    else:
-        encoder_path = path / "encoder.pt"
-        decoder_path = path / "decoder.pt"
+    def create_map(self, data: torch.Tensor):
+        val_map = dict()
 
-    torch.save(model.encoder.state_dict(), encoder_path)
-    torch.save(model.decoder.state_dict(), decoder_path)
+        for item in data:
+            if item in val_map:
+                val_map[item] += 1
+            else:
+                val_map[item] = 1
 
-    return path
+        return val_map
 
+    def create_probs(self, freqs):
+        probs = torch.empty(len(freqs))
+
+        total = torch.sum(torch.tensor(freqs.values()))
+
+        i = 0
+        for key, value in freqs:
+            probs[i] = value/total
+            i+=1
+
+        return probs
+
+    def calc_interval(probs: torch.Tensor, prob_index: int):
+        S = torch.sum(probs[0:prob_index])
+        R = torch.sum(probs)
+        
 def to_decimal(arr: List):
     for i, val in enumerate(arr):
         arr[i] = Decimal(val)
@@ -114,6 +119,3 @@ def arithmetic_decode(freq_table: torch.Tensor, message: Decimal):
         features[i] = symbol
 
     return features
-
-
-

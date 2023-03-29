@@ -1,5 +1,5 @@
 import torch
-from model_scripts import data_saver
+from data_scripts import data_saver
 from range_coder import RangeEncoder, RangeDecoder, prob_to_cum_freq
 
 from argparse import ArgumentParser
