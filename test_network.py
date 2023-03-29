@@ -1,0 +1,152 @@
+from argparse import ArgumentParser, ArgumentTypeError
+import os
+from pathlib import Path
+import torch
+from models.SwinCompression import Quantise8, DeQuantise8
+from data_scripts import imagenet
+from models import SwinCompression
+from range_coder import RangeEncoder, RangeDecoder, prob_to_cum_freq
+from typing import Tuple
+
+expand_hyperparameters = {
+    'e':'embed_dim',
+    't':'transfer_dim',
+    'w':'window_size',
+    'd':'depth'
+}
+
+def dir_path(path):
+    if os.path.isdir(path):
+        return path
+    else:
+        raise ArgumentTypeError(f"Path does not exist: {path}")
+    
+def compress_image(image: torch.Tensor, transform: torch.nn.Module, folder_name: str = 'image_folder', filename: str = 'image'):
+    dir = f'./saved_images/{folder_name}'
+    if not os.path.exists(dir):
+        os.mkdir(dir)
+
+    quantise = Quantise8()
+    encoder = RangeEncoder(f'{dir}/{filename}_message.bin')
+
+    transformed_image = transform(image)
+    shape = transformed_image.shape
+
+    quantised_image, min_x, max_x = quantise(transformed_image)
+
+    frequency_table: torch.Tensor = quantised_image.bincount()
+    probability_table = frequency_table/torch.sum(frequency_table)
+    probability_table = probability_table.tolist()
+    cum_freq = prob_to_cum_freq(probability_table, quantised_image.shape[0])
+    data = quantised_image.tolist()
+    encoder.encode(data, cum_freq)
+    encoder.close()
+
+    torch.save(
+        {
+            'freq': frequency_table,
+            'min': min_x,
+            'max': max_x
+        },
+        f'{dir}/{filename}_metadata.pt')
+    
+    return shape, f'{dir}/{filename}'
+    
+def decompress_image(transform: torch.nn.Module, shape: torch.Size, dir: str) -> torch.Tensor:
+    decoder = RangeDecoder(f'{dir}_message.bin')
+    dequanise = DeQuantise8()
+
+    metadata = torch.load(f'{dir}_metadata.pt')
+    frequency_table = metadata['freq']
+    min_x = metadata['min']
+    max_x = metadata['max']
+
+    data_length = torch.sum(frequency_table)
+    probability_table = frequency_table/data_length
+    probability_table = probability_table.tolist()
+    cum_freq = prob_to_cum_freq(probability_table, data_length)
+
+    data = decoder.decode(data_length, cum_freq)
+    decoder.close()
+
+    quantised_data = torch.tensor([data])
+    dequantised_data = dequanise(quantised_data, min_x, max_x, shape)
+    
+    transformed_image = transform(dequantised_data)
+
+    return transformed_image
+
+def get_image(dataset) -> Tuple[torch.Tensor, int]:
+    index = torch.randint(low=0, high=len(dataset), size=(1,)).item()
+    image = dataset[index]
+    return image, index
+
+def get_hyperparameters(dir: str):
+    folder = dir.split(os.sep)[-1]
+    segments = folder.split('_')[1:]
+
+    parameters = dict()
+    for segment in segments:
+        parameters[expand_hyperparameters[segment[0]]] = int(segment[1:])
+
+    return parameters
+
+if __name__ == '__main__':
+    parser = ArgumentParser()
+    parser.add_argument("-m", "--model_dir", dest="model_dir", help="The location of the model to be teted", type=dir_path)
+    parser.add_argument("-s", "--seed", dest="manual_seed", help="The seed to be used when picking a random image", type=int, default=-1)
+    parser.add_argument("-i", "--imagenet", dest="imagenet", help="The location where imagenet is stored", type=dir_path)
+    parser.add_argument("-n", "--number_images", dest="images", help="How many images should be loaded", type=int)
+
+    args = vars(parser.parse_args())
+
+    params = get_hyperparameters(args['model_dir'])
+
+    depths = [2]*params['depth']
+    depths[-2] = 6
+
+    heads = [4]*params['depth']
+
+    # model = SwinCompression.FullSwinCompressor(embed_dim=params['embed_dim'], 
+    #     transfer_dim=params['transfer_dim'], 
+    #     patch_size=[2,2], 
+    #     depths=depths, 
+    #     num_heads=heads, 
+    #     window_size=[params['window_size'], params['window_size']], 
+    #     dropout=0.5)
+
+    model_params = torch.load(f'{args["model_dir"]}/final_model.pt')
+    
+    encoder_model = SwinCompression.Encoder(
+        embed_dim=params['embed_dim'], 
+        output_dim=params['transfer_dim'], 
+        patch_size=[2,2], 
+        depths=depths, 
+        num_heads=heads, 
+        window_size=[params['window_size'], params['window_size']], 
+        dropout=0.5)
+    
+    encoder_model.load_state_dict(model_params['encoder'])
+
+    decoder_model = SwinCompression.Decoder(
+        embed_dim=params['embed_dim'], 
+        input_embed_dim=params['transfer_dim'],
+        depths=depths, 
+        num_heads=heads, 
+        window_size=[params['window_size'], params['window_size']], 
+        dropout=0.5)
+    
+    decoder_model.load_state_dict(model_params['decoder'])
+
+    dataset = imagenet.IN(args['imagenet'])
+
+    if args['manual_seed'] != -1:
+        torch.manual_seed(args['manual_seed'])
+
+    for i in range(args['images']):
+        image, index = get_image(dataset)
+        folder_name = f'e{params["embed_dim"]}_t{params["transfer_dim"]}_w{params["window_size"]}_d{params["depth"]}'
+        shape, dir = compress_image(image, encoder_model, folder_name=folder_name, filename=f'image{i}_index{index}')
+        new_image = decompress_image(decoder_model, shape, dir)
+        #Next you need to collect metrics on compression ratio and save the decompressed image
+
