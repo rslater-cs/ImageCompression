@@ -1,6 +1,6 @@
-
 data
 saved_models
+saved_images
 __pycache__
 *pyc
 cuda-ubuntu2004.pin.1

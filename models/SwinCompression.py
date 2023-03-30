@@ -21,13 +21,16 @@ class Quantise8(nn.Module):
         qx = 255*((x-min_x)/(max_x-min_x))
         qx = qx.type(torch.uint8)
 
+        qx = torch.permute(qx, (1,0))
+
         return qx, min_x, max_x
 
 class DeQuantise8(nn.Module):
     def __init__(self):
         super().__init__()
 
-    def forward(self, x, min_x, max_x, shape):
+    def forward(self, x: torch.Tensor, min_x: torch.Tensor, max_x: torch.Tensor, shape):
+        x = torch.permute(x, (1,0))
         x = min_x+(max_x-min_x)*(x/255.0)
 
         x = torch.permute(x, (1,0))
