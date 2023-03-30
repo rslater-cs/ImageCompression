@@ -1,12 +1,13 @@
 from argparse import ArgumentParser, ArgumentTypeError
 import os
-from pathlib import Path
 import torch
+from torchvision import transforms
 from models.SwinCompression import Quantise8, DeQuantise8
 from data_scripts import imagenet
 from models import SwinCompression
 from range_coder import RangeEncoder, RangeDecoder, prob_to_cum_freq
 from typing import Tuple
+from PIL import Image
 
 expand_hyperparameters = {
     'e':'embed_dim',
@@ -81,6 +82,16 @@ def get_image(dataset) -> Tuple[torch.Tensor, int]:
     image = dataset[index]
     return image, index
 
+def save_images(original: torch.Tensor, reconstruct: torch.Tensor, dir):
+    toImage = transforms.ToPILImage()
+
+    original = toImage(original)
+    reconstruct = toImage(reconstruct)
+
+    original.save(f'{dir}_orig.png')
+    reconstruct.save(f'{dir}_recon.png')
+
+
 def get_hyperparameters(dir: str):
     folder = dir.split(os.sep)[-1]
     segments = folder.split('_')[1:]
@@ -148,5 +159,7 @@ if __name__ == '__main__':
         folder_name = f'e{params["embed_dim"]}_t{params["transfer_dim"]}_w{params["window_size"]}_d{params["depth"]}'
         shape, dir = compress_image(image, encoder_model, folder_name=folder_name, filename=f'image{i}_index{index}')
         new_image = decompress_image(decoder_model, shape, dir)
-        #Next you need to collect metrics on compression ratio and save the decompressed image
+        save_images(image, new_image, dir)
+
+
 
