@@ -4,7 +4,8 @@ import torch
 from torchvision import transforms
 from models.SwinCompression import Quantise8, DeQuantise8
 from data_scripts import imagenet
-from models import SwinCompression
+# from models import SwinCompression
+from models import SwinCompression_old as SwinCompression
 from range_coder import RangeEncoder, RangeDecoder, prob_to_cum_freq
 from typing import Tuple
 from PIL import Image
@@ -118,35 +119,22 @@ if __name__ == '__main__':
 
     heads = [4]*params['depth']
 
-    # model = SwinCompression.FullSwinCompressor(embed_dim=params['embed_dim'], 
-    #     transfer_dim=params['transfer_dim'], 
-    #     patch_size=[2,2], 
-    #     depths=depths, 
-    #     num_heads=heads, 
-    #     window_size=[params['window_size'], params['window_size']], 
-    #     dropout=0.5)
-
-    model_params = torch.load(f'{args["model_dir"]}/final_model.pt')
-    
-    encoder_model = SwinCompression.Encoder(
-        embed_dim=params['embed_dim'], 
-        output_dim=params['transfer_dim'], 
+    model = SwinCompression.FullSwinCompressor(embed_dim=params['embed_dim'], 
+        transfer_dim=params['transfer_dim'], 
         patch_size=[2,2], 
         depths=depths, 
         num_heads=heads, 
         window_size=[params['window_size'], params['window_size']], 
         dropout=0.5)
-    
-    encoder_model.load_state_dict(model_params['encoder'])
+    model.requires_grad_(False)
 
-    decoder_model = SwinCompression.Decoder(
-        embed_dim=params['embed_dim'], 
-        input_embed_dim=params['transfer_dim'],
-        depths=depths, 
-        num_heads=heads, 
-        window_size=[params['window_size'], params['window_size']], 
-        dropout=0.5)
+    device = "cuda:0" if torch.cuda.is_available() else "cpu"
+    model_params = torch.load(f'{args["model_dir"]}/final_model.pt', map_location=device)
     
+    encoder_model = model.encoder
+    encoder_model.load_state_dict(model_params['encoder'])
+    
+    decoder_model = model.decoder
     decoder_model.load_state_dict(model_params['decoder'])
 
     dataset = imagenet.IN(args['imagenet'])
