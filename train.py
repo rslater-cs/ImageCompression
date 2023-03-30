@@ -11,8 +11,6 @@ from models import model_requirements, metrics
 
 from tqdm import tqdm
 
-from math import ceil
-
 import os
 import time
 
@@ -41,13 +39,13 @@ def train(model: Module, optimizer: optim.Optimizer, tepoch: tqdm, path, device,
 
         output_images = model(inputs)
         loss = mse(output_images, outputs)
-        avg_psnr = average_psnr(output_images, outputs).item()
-        avg_loss = average_loss(output_images, outputs).item()
+        avg_psnr = average_psnr(output_images, outputs)
+        avg_loss = average_loss(output_images, outputs)
 
         loss.backward()
         optimizer.step()
 
-        tepoch.set_postfix({"loss":average_loss, "pSNR":avg_psnr})
+        tepoch.set_postfix({"loss":avg_loss, "pSNR":avg_psnr})
     
     return avg_psnr, avg_loss
 
@@ -60,8 +58,8 @@ def valid(model: Module, batches, device):
             outputs = inputs.clone()
 
             output_images = model(inputs)
-            avg_psnr = average_psnr(output_images, outputs).item()
-            avg_loss = average_loss(output_images, outputs).item()
+            avg_psnr = average_psnr(output_images, outputs)
+            avg_loss = average_loss(output_images, outputs)
 
         return avg_psnr, avg_loss
 
@@ -94,22 +92,15 @@ def start_session(model: Module, epochs, batch_size, save_dir, data_dir):
     model = DataParallel(model, device_ids=devices)
 
     dataset = imagenet.IN(data_dir)
+
     trainloader = DataLoader(dataset.trainset, batch_size=batch_size, shuffle=dataset.shufflemode)
-    train_len = len(dataset.trainset)
-    train_batches = ceil(train_len/batch_size)
-
     validloader = DataLoader(dataset.validset, batch_size=batch_size, shuffle=False)
-    valid_len = len(dataset.validset)
-    valid_batches = ceil(valid_len/batch_size)
-
     testloader = DataLoader(dataset.testset, batch_size=batch_size, shuffle=False)
-    test_len = len(dataset.testset)
-    test_batches = ceil(test_len/batch_size)
     
     status = Status(save_dir)
-    training_log = MetricLogger(save_dir, name='train', size=train_batches, mode=mode)
-    valid_log = MetricLogger(save_dir, name='valid', size=valid_batches, mode=mode)
-    test_log = MetricLogger(save_dir, name="test", size=test_batches, mode=mode)
+    training_log = MetricLogger(save_dir, name='train', mode=mode)
+    valid_log = MetricLogger(save_dir, name='valid', mode=mode)
+    test_log = MetricLogger(save_dir, name="test", mode=mode)
 
     for epoch in range(start_epoch, epochs):
         with tqdm(trainloader, unit="batch") as tepoch:

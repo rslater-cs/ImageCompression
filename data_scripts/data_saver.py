@@ -2,7 +2,7 @@ import os
 from pathlib import Path
 import shutil
 from torch import cuda
-from loggers.printing import Printer
+from data_scripts.loggers.printing import Printer
 
 NETWORK_NAME = 'SwinCompression'
 

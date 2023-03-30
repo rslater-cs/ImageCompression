@@ -55,7 +55,7 @@ class ViTBlock(nn.Module):
             attention_dropout=dropout
             )
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor):
         # input: B C H W
 
         # x: B H W C
@@ -107,7 +107,7 @@ class Encoder(SwinTransformer):
 
         # self.quantise = Quantise8()
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor):
         #input size: B, C, H, W
 
         # x: B, H, W, C
@@ -257,7 +257,7 @@ class Decoder(nn.Module):
                     nn.init.zeros_(m.bias)
         
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor):
         # x: B C H W
         # x = self.dequantise(x, minx, maxx, shape)
 
@@ -326,13 +326,58 @@ class FullSwinCompressor(nn.Module):
             block=block
         )
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor):
         # hw_reduction = 2 ** self.depth
         # shape = (x.shape[0], self.transfer_dim, x.shape[2]//hw_reduction, x.shape[3]//hw_reduction)
         x = self.encoder(x)
         x = self.decoder(x)
 
         return x
+    
+class PublishedCompressor(FullSwinCompressor):
+    def __init__(self, 
+            transfer_dim: int, 
+            patch_size: List[int], 
+            embed_dim: int, 
+            depths: List[int], 
+            num_heads: List[int], 
+            window_size: List[int], 
+            mlp_ratio: float = 4, 
+            dropout: float = 0, 
+            attention_dropout: float = 0, 
+            stochastic_depth_prob: float = 0, 
+            norm_layer: Optional[Callable[..., nn.Module]] = None, 
+            block: Optional[Callable[..., nn.Module]] = None
+            ):
+        super().__init__(
+            transfer_dim, 
+            patch_size, 
+            embed_dim, 
+            depths, 
+            num_heads,
+            window_size, 
+            mlp_ratio, 
+            dropout, 
+            attention_dropout, 
+            stochastic_depth_prob, 
+            norm_layer, 
+            block
+            )
+        
+        self.quantise = Quantise8()
+        self.dequantise = DeQuantise8()
+        
+    def forward(self, x: torch.Tensor):
+        x = self.encoder(x)
+
+        shape = x.shape
+        x, min_x, max_x = self.quantise(x)
+        x = self.dequantise(x, min_x, max_x, shape)
+
+        x = self.decoder(x)
+
+        return x
+
 
 # NEXT MOVE: Make movie dataset into resolution of (1024, 576) which will allow 6 reduction layers of 
 # output size (B, 1, 16, 9) resulting in a compressed image size of 576 bytes and a compressed movie of

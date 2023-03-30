@@ -151,6 +151,7 @@ if __name__ == '__main__':
         window_size=[params['window_size'], params['window_size']], 
         dropout=0.5)
     model.requires_grad_(False)
+    model.eval()
     model = model.to(device)
 
     model_params = torch.load(f'{args["model_dir"]}/final_model.pt', map_location=device)
