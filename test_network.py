@@ -137,7 +137,7 @@ if __name__ == '__main__':
     decoder_model = model.decoder
     decoder_model.load_state_dict(model_params['decoder'])
 
-    dataset = imagenet.IN(args['imagenet'])
+    dataset = imagenet.IN(args['imagenet']).testset
 
     if args['manual_seed'] != -1:
         torch.manual_seed(args['manual_seed'])
