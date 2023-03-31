@@ -67,14 +67,6 @@ script = $ENV(PWD)/session.py
 model_dir = $ENV(PWD)/saved_models
 imagenet_dir = /mnt/fast/datasets/still/ImageNet
 
-
-depth = 4
-window_size = 8
-embed_dim = 48
-transfer_dim = 16
-
-queue 
-
 depth = 4
 window_size = 8
 embed_dim = 48
