@@ -21,6 +21,10 @@ jpeg_qualties = list(range(1, 95, 5))
 jpeg_qualties.append(95)
 
 # targets are 0.5, 1, 2 bpp
+# data size targets are 3136, 6272, 12544
+# at a depth of 5 that translates to 64, 128, 256 channel depths
+# at a depth of 4 that translates to 16, 32, 64 channel depth
+# at a depth of 3 that translates to 4, 8, 16 channel depth
 target_qualities = [6, 21, 66]
 
 def dir_path(path):
