@@ -79,14 +79,7 @@ window_size = 4
 embed_dim = 24
 transfer_dim = 64
 
-queue 
-
-depth = 5
-window_size = 8
-embed_dim = 24
-transfer_dim = 64
-
-queue  
+queue
 
 # transfer_dim = d3(32,64), d4(64, 256)
 # d = e96(3), e*(3, 4)
