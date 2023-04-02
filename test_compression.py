@@ -17,6 +17,12 @@ expand_hyperparameters = {
     'd':'depth'
 }
 
+jpeg_qualties = list(range(1, 95, 5))
+jpeg_qualties.append(95)
+
+# targets are 0.5, 1, 2 bpp
+target_qualities = [6, 21, 66]
+
 def dir_path(path):
     if os.path.isdir(path):
         return path
@@ -115,6 +121,9 @@ def save_images(original: torch.Tensor, reconstruct_q: torch.Tensor, reconstruct
     reconstruct.save(f'{dir}_recon.png')
     reconstruct_q.save(f'{dir}_reconq.png')
 
+    for quality in target_qualities:
+        original.save(f'{dir}_jpeg_q{quality}.jpeg', quality=quality)
+
 def get_hyperparameters(dir: str):
     folder = dir.split(os.sep)[-1]
     segments = folder.split('_')[1:]
@@ -171,9 +180,13 @@ if __name__ == '__main__':
         image, index = get_image(dataset)
         image = image.to(device)
         folder_name = f'e{params["embed_dim"]}_t{params["transfer_dim"]}_w{params["window_size"]}_d{params["depth"]}'
+        print("Compressing Image")
         shape, dir = compress_image(image, encoder_model, folder_name=folder_name, filename=f'image{i}_index{index}')
+        print("Decompressing Image")
         new_image = decompress_image(decoder_model, shape, dir, device)
+        print("No Quantisation Image")
         new_image_nq = no_quantisation(image, encoder_model, decoder_model)
+        print("Done")
         save_images(image, new_image, new_image_nq, dir)
 
 
