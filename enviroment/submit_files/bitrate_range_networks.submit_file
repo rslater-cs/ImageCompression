@@ -6,7 +6,7 @@
 
 #---------------------------------------------
 # Name your batch so it's easy to distinguish in the q.
-JobBatchName = "BitRateRangeCompressionNetworks"
+JobBatchName = "FinalCompressionNetworks"
 
 # --------------------------------------------
 # Executable
