@@ -77,7 +77,7 @@ queue
 
 depth = 4
 window_size = 8
-embed_dim = 48
+embed_dim = 36
 transfer_dim = 32
 
 queue 
