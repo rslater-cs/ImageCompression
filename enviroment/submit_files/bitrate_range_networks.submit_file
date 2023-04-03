@@ -64,7 +64,7 @@ arguments = $(script) --epochs 50 --batch 32 --save_dir $(model_dir) --imagenet 
 # NOTE: Variable names can't contain dashes!
 # NOTE: delete this soon
 script = $ENV(PWD)/session.py
-model_dir = $ENV(PWD)/saved_models
+model_dir = $ENV(PWD)/final_saved_models
 imagenet_dir = /mnt/fast/datasets/still/ImageNet
 
 
