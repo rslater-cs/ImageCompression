@@ -151,6 +151,8 @@ class PatchSplitting(nn.Module):
 
         assert C % 2 == 0, "channels not divisible by 2"
 
+        x = self.norm(x) # B H W C
+
         diff = C//2
 
         x = self.enlargement(x) # B H W 2C
@@ -165,8 +167,6 @@ class PatchSplitting(nn.Module):
         x[:, 1::2, 0::2, :] = x_s[1]
         x[:, 0::2, 1::2, :] = x_s[2]
         x[:, 1::2, 1::2, :] = x_s[3]
-
-        x = self.norm(x) # B H W C
 
         return x
 
