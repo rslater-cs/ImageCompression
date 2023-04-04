@@ -46,7 +46,8 @@ if __name__ == "__main__":
         depths=depths, 
         num_heads=heads, 
         window_size=[args['window_size'], args['window_size']], 
-        dropout=0.5)
+        dropout=0.2,
+        attention_dropout=0.1)
 
     full_save_path = f'{args["save_dir"]}/SwinCompression_e{args["embed_dim"]}_t{args["transfer_dim"]}_w{args["window_size"]}_d{args["depth"]}'
     full_save_path = make_path(full_save_path)
