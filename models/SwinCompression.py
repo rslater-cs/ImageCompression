@@ -136,7 +136,7 @@ class PatchSplitting(nn.Module):
         super().__init__()
         self.dim = dim
         self.enlargement = nn.Linear(dim, 2*dim)
-        self.norm = norm_layer(dim)
+        self.norm = norm_layer(dim//2)
 
     # Check page 17 of notes for diagram of plans
     def split_first(self, x: torch.Tensor):
