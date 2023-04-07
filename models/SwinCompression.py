@@ -132,13 +132,6 @@ class PatchSplitting(nn.Module):
         self.enlargement = nn.Linear(dim, 2*dim)
         self.norm = norm_layer(dim)
 
-    # Check page 17 of notes for diagram of plans
-    def split_first(self, x: torch.Tensor):
-        return x
-
-    def enlargement_first(self, x: torch.Tensor):
-        return x
-
     def forward(self, x: torch.Tensor):
         B, H, W, C = x.shape
         device = x.get_device()
@@ -320,6 +313,51 @@ class FullSwinCompressor(nn.Module):
         # hw_reduction = 2 ** self.depth
         # shape = (x.shape[0], self.transfer_dim, x.shape[2]//hw_reduction, x.shape[3]//hw_reduction)
         x = self.encoder(x)
+        x = self.decoder(x)
+
+        return x
+    
+class PublishedCompressor(FullSwinCompressor):
+    def __init__(self, 
+            transfer_dim: int, 
+            patch_size: List[int], 
+            embed_dim: int, 
+            depths: List[int], 
+            num_heads: List[int], 
+            window_size: List[int], 
+            mlp_ratio: float = 4, 
+            dropout: float = 0, 
+            attention_dropout: float = 0, 
+            stochastic_depth_prob: float = 0, 
+            norm_layer: Optional[Callable[..., nn.Module]] = None, 
+            block: Optional[Callable[..., nn.Module]] = None
+            ):
+        super().__init__(
+            transfer_dim, 
+            patch_size, 
+            embed_dim, 
+            depths, 
+            num_heads,
+            window_size, 
+            mlp_ratio, 
+            dropout, 
+            attention_dropout, 
+            stochastic_depth_prob, 
+            norm_layer, 
+            block
+            )
+        
+        self.quantise = Quantise8()
+        self.dequantise = DeQuantise8()
+        self.requires_grad_(False)
+        
+    def forward(self, x: torch.Tensor):
+        x = self.encoder(x)
+
+        shape = x.shape
+        x, min_x, max_x = self.quantise(x)
+        x = self.dequantise(x, min_x, max_x, shape)
+
         x = self.decoder(x)
 
         return x
