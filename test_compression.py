@@ -4,11 +4,12 @@ import torch
 from torchvision import transforms
 from models.SwinCompression import Quantise8, DeQuantise8
 from data_scripts import imagenet
-from models import SwinCompression
+from models import SwinCompression, metrics
 # from models import SwinCompression_old as SwinCompression
 from range_coder import RangeEncoder, RangeDecoder, prob_to_cum_freq
 from typing import Tuple
 from PIL import Image
+import pandas as pd
 
 expand_hyperparameters = {
     'e':'embed_dim',
@@ -16,9 +17,6 @@ expand_hyperparameters = {
     'w':'window_size',
     'd':'depth'
 }
-
-jpeg_qualties = list(range(1, 95, 5))
-jpeg_qualties.append(95)
 
 # targets are 0.5, 1, 2 bpp
 # data size targets are 3136, 6272, 12544
@@ -108,6 +106,9 @@ def get_image(dataset) -> Tuple[torch.Tensor, int]:
 
 def save_images(original: torch.Tensor, reconstruct_q: torch.Tensor, reconstruct: torch.Tensor, dir):
     toImage = transforms.ToPILImage()
+    psnr = metrics.PSNR()
+    transforms = imagenet.IN().transform
+    psnr_results = {"image_mode":[],"psnr":[]}
 
     B, C, H, W = original.shape
     original = original.reshape(C, H, W)
@@ -117,16 +118,30 @@ def save_images(original: torch.Tensor, reconstruct_q: torch.Tensor, reconstruct
     reconstruct = preprocess(reconstruct)
     reconstruct_q = preprocess(reconstruct_q)
 
-    original = toImage(original)
-    reconstruct = toImage(reconstruct)
-    reconstruct_q = toImage(reconstruct_q)
+    original_pil = toImage(original)
+    reconstruct_pil = toImage(reconstruct)
+    reconstruct_q_pil = toImage(reconstruct_q)
 
-    original.save(f'{dir}_orig.png')
-    reconstruct.save(f'{dir}_recon.png')
-    reconstruct_q.save(f'{dir}_reconq.png')
+    original_pil.save(f'{dir}_orig.png')
+    reconstruct_pil.save(f'{dir}_recon.png')
+    reconstruct_q_pil.save(f'{dir}_reconq.png')
 
     for quality in target_qualities:
         original.save(f'{dir}_jpeg_q{quality}.jpeg', quality=quality)
+
+        jpeg = Image.open(f'{dir}_jpeg_q{quality}.jpeg')
+        jpeg = transforms(jpeg)
+        psnr_results['image_mode'].append(f'jpeg_q{quality}')
+        psnr_results['psnr'].append(psnr(jpeg, original))
+
+    psnr_results['image_mode'].append(f'network')
+    psnr_results['psnr'].append(psnr(reconstruct_pil, original))
+
+    psnr_results['image_mode'].append(f'network_quantised')
+    psnr_results['psnr'].append(psnr(reconstruct_q_pil, original))
+
+    data = pd.DataFrame(psnr_results)
+    data.to_csv(f'{dir}_psnr_results_.csv')
 
 def get_hyperparameters(dir: str):
     folder = dir.split(os.sep)[-1]
