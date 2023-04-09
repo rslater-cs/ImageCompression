@@ -104,10 +104,10 @@ def get_image(dataset) -> Tuple[torch.Tensor, int]:
     image = torch.unsqueeze(dataset[index][0], 0)
     return image, index
 
-def save_images(original: torch.Tensor, reconstruct_q: torch.Tensor, reconstruct: torch.Tensor, dir):
+def save_images(original: torch.Tensor, reconstruct_q: torch.Tensor, reconstruct: torch.Tensor, dir, device):
     toImage = transforms.ToPILImage()
     psnr = metrics.PSNR()
-    transforms = imagenet.IN().transform
+    im_transforms = imagenet.IN.transform
     psnr_results = {"image_mode":[],"psnr":[]}
 
     B, C, H, W = original.shape
@@ -118,27 +118,37 @@ def save_images(original: torch.Tensor, reconstruct_q: torch.Tensor, reconstruct
     reconstruct = preprocess(reconstruct)
     reconstruct_q = preprocess(reconstruct_q)
 
-    original_pil = toImage(original)
-    reconstruct_pil = toImage(reconstruct)
-    reconstruct_q_pil = toImage(reconstruct_q)
+    original = toImage(original)
+    reconstruct = toImage(reconstruct)
+    reconstruct_q = toImage(reconstruct_q)
 
-    original_pil.save(f'{dir}_orig.png')
-    reconstruct_pil.save(f'{dir}_recon.png')
-    reconstruct_q_pil.save(f'{dir}_reconq.png')
+    original.save(f'{dir}_orig.png')
+    reconstruct.save(f'{dir}_recon.png')
+    reconstruct_q.save(f'{dir}_reconq.png')
+
+    original_loaded = Image.open(f'{dir}_orig.png')
+    original_loaded = im_transforms(original_loaded).to(device) 
+
+    reconstruct_loaded = Image.open(f'{dir}_recon.png')
+    reconstruct_loaded = im_transforms(reconstruct_loaded).to(device) 
+
+    reconstruct_q_loaded = Image.open(f'{dir}_reconq.png')
+    reconstruct_q_loaded = im_transforms(reconstruct_q_loaded).to(device)  
 
     for quality in target_qualities:
         original.save(f'{dir}_jpeg_q{quality}.jpeg', quality=quality)
 
         jpeg = Image.open(f'{dir}_jpeg_q{quality}.jpeg')
-        jpeg = transforms(jpeg)
+        jpeg = im_transforms(jpeg).to(device) 
+
         psnr_results['image_mode'].append(f'jpeg_q{quality}')
-        psnr_results['psnr'].append(psnr(jpeg, original))
+        psnr_results['psnr'].append(psnr(jpeg, original_loaded).item())
 
     psnr_results['image_mode'].append(f'network')
-    psnr_results['psnr'].append(psnr(reconstruct_pil, original))
+    psnr_results['psnr'].append(psnr(reconstruct_loaded, original_loaded).item())
 
     psnr_results['image_mode'].append(f'network_quantised')
-    psnr_results['psnr'].append(psnr(reconstruct_q_pil, original))
+    psnr_results['psnr'].append(psnr(reconstruct_q_loaded, original_loaded).item())
 
     data = pd.DataFrame(psnr_results)
     data.to_csv(f'{dir}_psnr_results_.csv')
@@ -206,7 +216,7 @@ if __name__ == '__main__':
         print("No Quantisation Image")
         new_image_nq = no_quantisation(image, encoder_model, decoder_model)
         print("Done")
-        save_images(image, new_image, new_image_nq, dir)
+        save_images(image, new_image, new_image_nq, dir, device)
 
 
 
