@@ -88,8 +88,8 @@ def get_files(folders, file_name):
 if __name__ == '__main__':
     # arguments: file type (valid, train), folders (list(list(hyperparameters))), metric (loss, psnr)
     parser = ArgumentParser()
-    parser.add_argument("-v", "--valid", dest="valid", help="Whether to look at train or valid data", type=bool)
-    parser.add_argument("-l", "--loss", dest="loss", help="Whether to look at psnr or loss data", type=bool)
+    parser.add_argument("-v", "--valid", dest="valid", help="Whether to look at train or valid data", action="store_true")
+    parser.add_argument("-l", "--loss", dest="loss", help="Whether to look at psnr or loss data", action="store_true")
     parser.add_argument("-f", "--folders", dest="param_set", help="A list of the model parameters to be looked at", type=list, nargs='*')
     parser.add_argument("-n", "--name", dest="name", help="Name of plot", type=str)
 
