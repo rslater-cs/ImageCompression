@@ -32,8 +32,8 @@ def get_hyperparameters(dir: str):
 
 if __name__ == '__main__':
     parser = ArgumentParser()
-    parser.add_argument("-m", "--model_dir", dest="model_dir", help="The location of the model to be teted", type=dir_path)
-    parser.add_argument("-i", "--imagenet", dest="imagenet", help="The location where imagenet is stored", type=dir_path)
+    parser.add_argument("-m", "--model_dir", dest="model_dir", help="The location of the model to be teted", type=str)
+    parser.add_argument("-i", "--imagenet", dest="imagenet", help="The location where imagenet is stored", type=str)
 
     args = vars(parser.parse_args())
 
@@ -64,7 +64,7 @@ if __name__ == '__main__':
     model.requires_grad_(False)
 
     dataset = imagenet.IN(args['imagenet']).testset
-    dataloader = DataLoader(dataset, 8, shuffle=False)
+    dataloader = DataLoader(dataset, 32, shuffle=False)
 
     avg_psnr, avg_loss = valid(model, dataloader, device)
 
