@@ -8,6 +8,7 @@ from typing import List, Tuple, Optional
 
 axis_index = {'epoch':0, 'loss':1, 'psnr':2}
 
+# Load multiple dataframes where multiple graphs to be displayed
 def load_dataframes(tables: List[Path]):
     dataframes = []
     for table in tables:
@@ -16,9 +17,11 @@ def load_dataframes(tables: List[Path]):
 
     return dataframes
 
+# Joins multiple dataframes of a shared column and displays against a second column
 def display_data(tables: List[Path], y_axis_index: int, x_axis_index: int, y_name: str, x_name: str, title: str, axis_labels = None, y_bounds: Optional[Tuple[float, float]] = None, x_bounds: Optional[Tuple[float, float]] = None, save_path = None):
     tables: List[pd.DataFrame] = load_dataframes(tables)
 
+    # Drop all columns apart from the two that are to be displayed
     for table in tables:
         table_len = len(table.columns)
         indexes = list(range(table_len))
@@ -26,6 +29,7 @@ def display_data(tables: List[Path], y_axis_index: int, x_axis_index: int, y_nam
         indexes.remove(x_axis_index)
         table.drop(labels=table.columns[indexes], axis=1)
 
+    # Join dataframes together
     joined_table = pd.DataFrame()
     joined_table[x_name] = tables[0][x_name]
     for i, table in enumerate(tables):
@@ -50,6 +54,7 @@ def display_data(tables: List[Path], y_axis_index: int, x_axis_index: int, y_nam
 
     plt.show()
 
+# Turns 1 digit integer parameters from command line to multiple digits
 def clean_params(params):
     cparams = []
 
@@ -59,6 +64,7 @@ def clean_params(params):
 
     return cparams
 
+# formats command line parameters into a useable string
 def get_parameters(params):
     parameters = []
     for i in range(len(params)//4):
@@ -66,6 +72,7 @@ def get_parameters(params):
         parameters.append(f'e{params[start]}_t{params[start+1]}_w{params[start+2]}_d{params[start+3]}')
     return parameters
 
+# Loads the folders of all models to be displayed
 def get_folder_names(params):
     folder_names = []
     for i in range(len(params)//4):
@@ -73,11 +80,13 @@ def get_folder_names(params):
         folder_names.append(f'..\saved_models\SwinCompression_e{params[start]}_t{params[start+1]}_w{params[start+2]}_d{params[start+3]}')
     return folder_names
 
+# check that all folders exist
 def validate_folders(folder_names):
     for folder in folder_names:
         if not os.path.exists(folder):
             raise Exception(f'{folder} does not exist')
         
+# combine folders and required file
 def get_files(folders, file_name):
     files = []
     for folder in folders:

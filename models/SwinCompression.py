@@ -8,6 +8,7 @@ from torchvision.models.swin_transformer import SwinTransformer, ShiftedWindowAt
 from torchvision.models import vision_transformer
 from time import time
 
+# Flattens and quantises a tensor from 32 bit floats to 8 bit integers
 class Quantise8(nn.Module):
     def __init__(self):
         super().__init__()
@@ -25,6 +26,7 @@ class Quantise8(nn.Module):
 
         return qx, min_x, max_x
 
+# Approximate the original values pre-quantisation
 class DeQuantise8(nn.Module):
     def __init__(self):
         super().__init__()
@@ -38,7 +40,7 @@ class DeQuantise8(nn.Module):
 
         return x
 
-
+# Implements the transformer block proposed in the ViT paper
 class ViTBlock(nn.Module):
     def __init__(self,
         num_heads: int,
@@ -116,12 +118,12 @@ class Encoder(SwinTransformer):
         # x: B, C, H, W
         x = torch.permute(x, (0, 3, 1, 2))
         x = self.out_conv(x)
+        # x: B H, W, C
         x = torch.permute(x, (0, 2, 3, 1))
         x = self.norm(x)
-        x = torch.permute(x, (0, 3, 1, 2))
 
-        # x: C*H*W B
-        # x, minx, maxx = self.quantise(x)
+        # x: B, C, H, W
+        x = torch.permute(x, (0, 3, 1, 2))
 
         return x
 
@@ -145,14 +147,18 @@ class PatchSplitting(nn.Module):
 
         diff = C//2
 
+        # Double the channel size of the tensor
         x = self.enlargement(x) # B H W 2C
 
+        # Split the channels into 4 equal tensors
         x_s = torch.split(x, split_size_or_sections=diff, dim=3)
 
         # device = "cuda:0" if torch.cuda.is_available() else "cpu"
 
         x = torch.empty(B, 2*H, 2*W, C//2).to(device)
 
+        # Copy the 4 seperate channels into a grid of 2x2 
+        # x: B 2H 2W C/2
         x[:, 0::2, 0::2, :] = x_s[0]
         x[:, 1::2, 0::2, :] = x_s[1]
         x[:, 0::2, 1::2, :] = x_s[2]
@@ -188,6 +194,9 @@ class Decoder(nn.Module):
         # self.dequantise = DeQuantise8()
 
         self.vit_block = ViTBlock(num_heads=num_heads[-1], num_features=input_embed_dim, mlp_ratio=mlp_ratio, dropout=dropout)
+
+        # Majority of this code is taken from the original swin code, changed to enlarge the 
+        # latent variables rather than reduce them
 
         layers: List[nn.Module] = []
 
@@ -233,6 +242,7 @@ class Decoder(nn.Module):
         num_features = embed_dim // (2 ** len(depths))
         self.norm = norm_layer(num_features)
 
+        # Transform tensor channel size into 3 channels to RGB image
         self.head = nn.Sequential(
             nn.Conv2d(num_features, 3, kernel_size=1, stride=1),
             nn.Tanh()
@@ -260,6 +270,7 @@ class Decoder(nn.Module):
         x = self.head(x)
         return x
 
+# Combination of encoder and decoder for training, no quantisation used 
 class FullSwinCompressor(nn.Module):
     def __init__(self,
         transfer_dim: int,
@@ -319,7 +330,9 @@ class FullSwinCompressor(nn.Module):
         x = self.decoder(x)
 
         return x
-    
+
+# Combination of encoder and decoder with quantisation, can only 
+# be used for evalutation
 class PublishedCompressor(FullSwinCompressor):
     def __init__(self, 
             transfer_dim: int, 

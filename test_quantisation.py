@@ -30,6 +30,7 @@ def get_hyperparameters(dir: str):
 
     return parameters
 
+# Load model parameters into quantised version of compression network, compare the quantisation vs no quantisation psnr value
 if __name__ == '__main__':
     parser = ArgumentParser()
     parser.add_argument("-m", "--model_dir", dest="model_dir", help="The location of the model to be teted", type=str)

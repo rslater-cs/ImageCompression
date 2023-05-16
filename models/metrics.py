@@ -1,5 +1,6 @@
 from torch import nn, Tensor, log10, no_grad
 
+# Given a loss function this class calculates the average over an epoch
 class AverageMetric(nn.Module):
     def __init__(self, metric: nn.Module, dataset_size: int = None, batches: int = None) -> None:
         super().__init__()
@@ -18,6 +19,7 @@ class AverageMetric(nn.Module):
         else:
             raise Exception("Either Batches or Dataset size must be provided, not both")
 
+    # Progressively adjusts the average metric over a whole epoch
     def forward(self, outputs: Tensor, labels: Tensor):
         with no_grad():
             if(self.current == self.size):
@@ -32,6 +34,7 @@ class AverageMetric(nn.Module):
 
             return self.total/self.current
     
+# Calculates the peak signal-to-noise ratio
 class PSNR(nn.Module):
     def __init__(self) -> None:
         super().__init__()

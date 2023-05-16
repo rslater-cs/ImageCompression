@@ -3,6 +3,7 @@ from torchvision.transforms import ToTensor
 from torchvision.datasets import ImageFolder
 from torch.utils.data import Subset
 
+# Class for loading a subset of the ImageNet dataset            
 class IN():
     transform = transforms.Compose([
             transforms.Resize(256),

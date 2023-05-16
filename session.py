@@ -5,6 +5,7 @@ from models import SwinCompression
 from train import start_session
 from data_scripts.data_saver import make_path
 
+# check validity of directory
 def dir_path(path):
     if os.path.isdir(path):
         return path
@@ -40,6 +41,7 @@ if __name__ == "__main__":
 
     print(depths)    
 
+    # Build full model with command line parameters
     compressor = SwinCompression.FullSwinCompressor(embed_dim=args['embed_dim'], 
         transfer_dim=args['transfer_dim'], 
         patch_size=[2,2], 
@@ -49,10 +51,9 @@ if __name__ == "__main__":
         dropout=0.2,
         attention_dropout=0.1)
 
+    # Load and check the path to save the model info and parameters
     full_save_path = f'{args["save_dir"]}/SwinCompression_e{args["embed_dim"]}_t{args["transfer_dim"]}_w{args["window_size"]}_d{args["depth"]}'
     full_save_path = make_path(full_save_path)
 
+    # deploy training session
     start_session(model=compressor, epochs=args['epochs'], batch_size=args['batch_size'], save_dir=full_save_path, data_dir=args['imagenet_dir'])
-
-# session.py -s ./saved_models -i ./ -e 1 -b 1 -m 12 -t 16 -w 2 -d 3
-# Need to create a script to setup restoration from checkpoint

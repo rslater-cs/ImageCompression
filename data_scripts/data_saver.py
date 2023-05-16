@@ -6,6 +6,8 @@ from data_scripts.loggers.printing import Printer
 
 NETWORK_NAME = 'SwinCompression'
 
+# Checks if the save path of the model exists 
+# Also checks if the model is a new run or a checkpoint
 def make_path(data_dir):
     if(not os.path.exists(data_dir)):
         os.mkdir(data_dir)
@@ -16,6 +18,7 @@ def make_path(data_dir):
 
     return Path(data_dir)
 
+# Writes GPU statistics to log file
 def save_gpu_stats(save_dir):
     writer = Printer(save_dir, name="gpu_info")
     writer.print("Has Cuda:")
@@ -30,20 +33,6 @@ def save_gpu_stats(save_dir):
 
     for i in range(cuda.device_count()):
         writer.print(str(cuda.get_device_name(i)))
-
-
-# def save_model(model, path: Path, in_progress=False):
-#     if(in_progress):
-#         encoder_path = path / "encoder_progress.pt"
-#         decoder_path = path / "decoder_progress.pt"
-#     else:
-#         encoder_path = path / "encoder.pt"
-#         decoder_path = path / "decoder.pt"
-
-#     torch.save(model.encoder.state_dict(), encoder_path)
-#     torch.save(model.decoder.state_dict(), decoder_path)
-
-#     return path
 
 
 

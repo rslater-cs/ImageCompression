@@ -1,7 +1,9 @@
 import csv
 
+## Easy plotting for loss and psnr progress
 class MetricLogger:
     
+    # overwites a file unless specified to continue a checkpoint model
     def __init__(self, path, name, mode='w'):
         self.path = f'{path}/{name}.csv'
         file = open(self.path, mode, newline='')

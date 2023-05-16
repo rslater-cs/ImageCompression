@@ -1,3 +1,4 @@
+# Returns the total number of parameters in a pytorch model
 def get_parameters(model):
     total=0
     for parameter in list(model.parameters()):
