@@ -190,7 +190,7 @@ def get_hyperparameters(dir: str):
 
 if __name__ == '__main__':
     parser = ArgumentParser()
-    parser.add_argument("-m", "--model_dir", dest="model_dir", help="The location of the model to be teted", type=dir_path)
+    parser.add_argument("-m", "--model_dir", dest="model_dir", help="The location of the model to be tested", type=dir_path)
     parser.add_argument("-s", "--seed", dest="manual_seed", help="The seed to be used when picking a random image", type=int, default=-1)
     parser.add_argument("-i", "--imagenet", dest="imagenet", help="The location where imagenet is stored", type=dir_path)
     parser.add_argument("-n", "--number_images", dest="images", help="How many images should be loaded", type=int)
